@@ -1,0 +1,112 @@
+use super::*;
+use crate::config::load_for_workspace_root;
+use crate::domain::TaskType;
+use chrono::{TimeZone, Utc};
+use std::fs;
+use tempfile::TempDir;
+
+fn storage_for_temp(temp: &TempDir) -> Storage {
+    let config = load_for_workspace_root(temp.path()).unwrap();
+    Storage::from_app_config(&config)
+}
+
+#[test]
+fn parses_learning_entries_file() {
+    let entries = learning::parse_learning_entries(
+        "2026-02-21T14:00:00Z | task a\n- line 1\n- line 2\n\n2026-02-21T15:00:00Z | task b\n- x\n- y\n",
+    )
+    .unwrap();
+
+    assert_eq!(entries.len(), 2);
+    assert_eq!(entries[0].task_title, "task a");
+}
+
+#[test]
+fn round_trip_create_and_list_task() {
+    let temp = TempDir::new().unwrap();
+    let storage = storage_for_temp(&temp);
+    storage.ensure_layout().unwrap();
+    let now = Utc.with_ymd_and_hms(2026, 2, 21, 15, 0, 0).unwrap();
+
+    storage
+        .create_task(
+            "Ship rewrite",
+            TaskStatus::Todo,
+            TaskType::Task,
+            "Do it",
+            now,
+        )
+        .unwrap();
+
+    let tasks = storage.list_tasks(None, None).unwrap();
+    assert_eq!(tasks.len(), 1);
+    assert_eq!(tasks[0].title, "Ship rewrite");
+}
+
+#[test]
+fn list_tasks_can_filter_by_type() {
+    let temp = TempDir::new().unwrap();
+    let storage = storage_for_temp(&temp);
+    storage.ensure_layout().unwrap();
+    let now = Utc.with_ymd_and_hms(2026, 2, 21, 15, 0, 0).unwrap();
+
+    storage
+        .create_task(
+            "Normal task",
+            TaskStatus::Todo,
+            TaskType::Task,
+            "Do it",
+            now,
+        )
+        .unwrap();
+    storage
+        .create_task("Fix auth", TaskStatus::Todo, TaskType::Bug, "Fix it", now)
+        .unwrap();
+
+    let bugs = storage.list_tasks(None, Some(TaskType::Bug)).unwrap();
+    assert_eq!(bugs.len(), 1);
+    assert_eq!(bugs[0].task_type, TaskType::Bug);
+    assert_eq!(bugs[0].title, "Fix auth");
+}
+
+#[test]
+fn init_prompt_uses_agents_file_by_default() {
+    let temp = TempDir::new().unwrap();
+    let storage = storage_for_temp(&temp);
+    let prompts = storage.prompts;
+
+    storage.ensure_agent_prompt_guidance().unwrap();
+
+    let content = fs::read_to_string(temp.path().join(storage.layout.agents_file)).unwrap();
+    assert!(content.contains(prompts.important_block_start));
+    assert!(content.contains("lt list [--type task|bug] [--show-done]"));
+    assert!(content.contains("lt discard \"<title>\""));
+}
+
+#[test]
+fn init_prompt_prefers_claude_when_agents_missing() {
+    let temp = TempDir::new().unwrap();
+    let storage = storage_for_temp(&temp);
+    let prompts = storage.prompts;
+    fs::write(temp.path().join(storage.layout.claude_file), "existing").unwrap();
+
+    storage.ensure_agent_prompt_guidance().unwrap();
+
+    let claude_content = fs::read_to_string(temp.path().join(storage.layout.claude_file)).unwrap();
+    assert!(claude_content.contains(prompts.important_block_start));
+    assert!(!temp.path().join(storage.layout.agents_file).exists());
+}
+
+#[test]
+fn init_prompt_append_is_idempotent() {
+    let temp = TempDir::new().unwrap();
+    let storage = storage_for_temp(&temp);
+    let prompts = storage.prompts;
+
+    storage.ensure_agent_prompt_guidance().unwrap();
+    storage.ensure_agent_prompt_guidance().unwrap();
+
+    let content = fs::read_to_string(temp.path().join(storage.layout.agents_file)).unwrap();
+    let count = content.matches(prompts.important_block_start).count();
+    assert_eq!(count, 1);
+}

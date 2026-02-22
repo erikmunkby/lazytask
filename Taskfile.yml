@@ -1,0 +1,31 @@
+version: "3"
+
+tasks:
+  setup:
+    desc: Prepare Rust toolchain and project dependencies
+    cmds:
+      - sh -c 'if command -v rustup >/dev/null 2>&1; then rustup component add rustfmt clippy; else echo "rustup not found; skipping component install"; fi'
+      - cargo fetch
+      - cargo check
+
+  fix:
+    desc: Apply formatting and clippy-driven fixes
+    cmds:
+      - cargo clippy --all-targets --fix --allow-dirty --allow-staged -- -D warnings
+      - cargo fmt --all
+      - cargo clippy --all-targets -- -D warnings
+
+  test:
+    desc: Run the Rust test suite
+    cmds:
+      - cargo test --all-targets
+
+  install:
+    desc: Install lazytask globally from this repository
+    cmds:
+      - cargo install --path . --force
+
+  tui:
+    desc: Open local TUI
+    cmds:
+      - cargo run --

@@ -1,0 +1,6 @@
+[limits]
+todo = 20 # max todo tasks
+in_progress = 3 # max in-progress tasks
+
+[hints]
+learn_threshold = 35 # show `lt learn` hint after this many LEARNINGS.md lines

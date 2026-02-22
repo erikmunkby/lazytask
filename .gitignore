@@ -1,0 +1,6 @@
+/target
+.agents/skills
+.claude/skills
+/draft
+*.local.*
+.DS_Store

@@ -1,0 +1,1 @@
+/Users/erikmunkby/open_source/lazytask/AGENTS.md

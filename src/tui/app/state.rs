@@ -1,0 +1,124 @@
+use crate::domain::{Task, TaskType};
+use crate::tui::actions::CreateField;
+use std::collections::VecDeque;
+
+#[derive(Debug, Clone)]
+pub struct LogEntry {
+    pub time: String,
+    pub message: String,
+    pub is_error: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct CreateState {
+    pub active_field: CreateField,
+    pub title: String,
+    pub task_type: TaskType,
+    pub details: String,
+    pub cursor_pos: usize,
+}
+
+impl CreateState {
+    pub(super) fn active_text(&self) -> &str {
+        match self.active_field {
+            CreateField::Title => &self.title,
+            CreateField::Type => self.task_type.as_str(),
+            CreateField::Details => &self.details,
+        }
+    }
+
+    pub(super) fn insert_char(&mut self, ch: char) {
+        match self.active_field {
+            CreateField::Title => {
+                self.title.insert(self.cursor_pos, ch);
+                self.cursor_pos += ch.len_utf8();
+            }
+            CreateField::Type => {
+                self.task_type = match self.task_type {
+                    TaskType::Task => TaskType::Bug,
+                    TaskType::Bug => TaskType::Task,
+                };
+            }
+            CreateField::Details => {
+                self.details.insert(self.cursor_pos, ch);
+                self.cursor_pos += ch.len_utf8();
+            }
+        }
+    }
+
+    pub(super) fn delete_char(&mut self) {
+        if self.cursor_pos == 0 {
+            return;
+        }
+        match self.active_field {
+            CreateField::Title => {
+                let prev = prev_char_boundary(&self.title, self.cursor_pos);
+                self.title.drain(prev..self.cursor_pos);
+                self.cursor_pos = prev;
+            }
+            CreateField::Type => {}
+            CreateField::Details => {
+                let prev = prev_char_boundary(&self.details, self.cursor_pos);
+                self.details.drain(prev..self.cursor_pos);
+                self.cursor_pos = prev;
+            }
+        }
+    }
+
+    pub(super) fn move_cursor_left(&mut self) {
+        if self.cursor_pos > 0 {
+            let text = self.active_text();
+            self.cursor_pos = prev_char_boundary(text, self.cursor_pos);
+        }
+    }
+
+    pub(super) fn move_cursor_right(&mut self) {
+        let len = self.active_text().len();
+        if self.cursor_pos < len {
+            let text = match self.active_field {
+                CreateField::Title => &self.title,
+                CreateField::Type => return,
+                CreateField::Details => &self.details,
+            };
+            self.cursor_pos = next_char_boundary(text, self.cursor_pos);
+        }
+    }
+
+    pub(super) fn switch_to(&mut self, field: CreateField) {
+        self.active_field = field;
+        self.cursor_pos = self.active_text().len();
+    }
+}
+
+fn prev_char_boundary(s: &str, pos: usize) -> usize {
+    let mut p = pos.saturating_sub(1);
+    while p > 0 && !s.is_char_boundary(p) {
+        p -= 1;
+    }
+    p
+}
+
+fn next_char_boundary(s: &str, pos: usize) -> usize {
+    let mut p = pos + 1;
+    while p < s.len() && !s.is_char_boundary(p) {
+        p += 1;
+    }
+    p
+}
+
+#[derive(Debug, Clone)]
+pub enum Mode {
+    Normal,
+    Creating(CreateState),
+}
+
+#[derive(Debug, Clone)]
+pub struct AppState {
+    pub tasks: Vec<Task>,
+    pub selected_index: usize,
+    pub preview_text: String,
+    pub log_entries: VecDeque<LogEntry>,
+    pub last_deleted: Option<Task>,
+    pub mode: Mode,
+    pub should_quit: bool,
+}
