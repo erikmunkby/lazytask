@@ -4,7 +4,7 @@ A task manager built for the age of AI coding agents.
 
 Tasks live as plain markdown files on disk visible to humans, readable by `grep`, and trivially diffable in git. AI agents operate through a strict CLI with stable JSON envelopes. Humans get a keyboard-driven TUI. Both interfaces share the same storage and rules: no sync, no server, no database.
 
-The design principle is **sophisticated simplicity**: tight WIP limits force focus, flat-file storage ensures observability, and a minimal command surface keeps agent behavior predictable.
+The design principle is **sophisticated simplicity**: if you can't do it on a whiteboard, you can't do it in lazytask. Tight WIP limits force focus, flat-file storage ensures observability, and a minimal command surface keeps agent behavior predictable.
 
 ## How it works
 

@@ -5,6 +5,8 @@
 - Human interface: keyboard-driven TUI
 - AI interface: fixed-parameter CLI commands with stable JSON envelopes
 
+Design principle: **sophisticated simplicity**. If you can't do it on a whiteboard, you can't do it in lazytask.
+
 ## Why use `lt`
 
 - It is observable: tasks are plain markdown files on disk.
