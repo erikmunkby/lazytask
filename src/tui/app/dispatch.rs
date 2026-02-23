@@ -1,5 +1,5 @@
 use super::{App, CreateState, LOG_CAPACITY, LogEntry, Mode};
-use crate::domain::{Task, TaskType};
+use crate::domain::{Task, TaskStatus, TaskType};
 use crate::services::CreateTaskInput;
 use crate::tui::actions::{Action, CreateField};
 use chrono::Local;
@@ -8,7 +8,8 @@ impl App {
     pub fn dispatch(&mut self, action: Action) {
         match action {
             Action::RefreshTasks => match self.service.list_tasks(None, None) {
-                Ok(tasks) => {
+                Ok(mut tasks) => {
+                    sort_tasks_for_tui(&mut tasks);
                     self.state.tasks = tasks;
                     if self.state.selected_index >= self.state.tasks.len() {
                         self.state.selected_index = self.state.tasks.len().saturating_sub(1);
@@ -163,6 +164,73 @@ impl App {
 
         while self.state.log_entries.len() > LOG_CAPACITY {
             self.state.log_entries.pop_front();
+        }
+    }
+}
+
+fn sort_tasks_for_tui(tasks: &mut [Task]) {
+    tasks.sort_by(|a, b| {
+        status_group_rank(a.status)
+            .cmp(&status_group_rank(b.status))
+            .then_with(|| b.updated_at.cmp(&a.updated_at))
+    });
+}
+
+fn status_group_rank(status: TaskStatus) -> u8 {
+    match status {
+        TaskStatus::InProgress => 0,
+        TaskStatus::Todo => 1,
+        TaskStatus::Done => 2,
+        TaskStatus::Discard => 3,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sort_tasks_for_tui;
+    use crate::domain::{Task, TaskStatus, TaskType};
+    use chrono::{TimeZone, Utc};
+
+    #[test]
+    fn sort_tasks_groups_by_status_then_updated_desc() {
+        let mut tasks = vec![
+            task("done-new", TaskStatus::Done, 5),
+            task("todo-old", TaskStatus::Todo, 3),
+            task("in-progress-old", TaskStatus::InProgress, 1),
+            task("discard-new", TaskStatus::Discard, 6),
+            task("todo-new", TaskStatus::Todo, 4),
+            task("in-progress-new", TaskStatus::InProgress, 2),
+        ];
+
+        sort_tasks_for_tui(&mut tasks);
+
+        let titles = tasks
+            .iter()
+            .map(|task| task.title.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            titles,
+            vec![
+                "in-progress-new",
+                "in-progress-old",
+                "todo-new",
+                "todo-old",
+                "done-new",
+                "discard-new"
+            ]
+        );
+    }
+
+    fn task(title: &str, status: TaskStatus, updated_at: i64) -> Task {
+        let timestamp = Utc.timestamp_opt(updated_at, 0).single().unwrap();
+        Task {
+            title: title.to_string(),
+            file_name: format!("{title}.md"),
+            status,
+            task_type: TaskType::Task,
+            details: String::new(),
+            created_at: timestamp,
+            updated_at: timestamp,
         }
     }
 }
