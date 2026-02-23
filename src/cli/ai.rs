@@ -11,7 +11,10 @@ pub(super) fn run_ai_command(
 ) -> Result<(Value, Option<String>), ServiceError> {
     match command {
         Commands::Init => unreachable!("init is handled before AI dispatch"),
-        Commands::List { task_type, show_done } => {
+        Commands::List {
+            task_type,
+            show_done,
+        } => {
             let now = chrono::Utc::now();
             let statuses: Vec<TaskStatus> = if show_done {
                 vec![TaskStatus::Todo, TaskStatus::InProgress, TaskStatus::Done]

@@ -90,10 +90,10 @@ pub(crate) fn parse_learning_entries(contents: &str) -> Result<Vec<LearningEntry
             continue;
         }
 
-        if let Some(entry) = current.as_mut() {
-            if let Some(item) = trimmed.strip_prefix("- ") {
-                entry.lines.push(item.trim().to_string());
-            }
+        if let Some(entry) = current.as_mut()
+            && let Some(item) = trimmed.strip_prefix("- ")
+        {
+            entry.lines.push(item.trim().to_string());
         }
     }
 

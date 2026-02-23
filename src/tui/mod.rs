@@ -27,10 +27,10 @@ pub fn run(service: TaskService, learn_threshold: usize) -> Result<()> {
     while !app.state.should_quit {
         guard.terminal.draw(|frame| render(frame, &app.state))?;
 
-        if event::poll(Duration::from_millis(200))? {
-            if let Event::Key(key) = event::read()? {
-                app.on_key(key);
-            }
+        if event::poll(Duration::from_millis(200))?
+            && let Event::Key(key) = event::read()?
+        {
+            app.on_key(key);
         }
     }
 

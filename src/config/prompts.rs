@@ -38,10 +38,9 @@ fn prompt_body(markdown: &'static str) -> &'static str {
     if let Some(after_open) = markdown
         .strip_prefix("<!---")
         .or_else(|| markdown.strip_prefix("<!--"))
+        && let Some((_, rest)) = after_open.split_once("-->")
     {
-        if let Some((_, rest)) = after_open.split_once("-->") {
-            return rest.trim_start_matches(['\r', '\n']);
-        }
+        return rest.trim_start_matches(['\r', '\n']);
     }
 
     markdown

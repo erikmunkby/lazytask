@@ -34,20 +34,18 @@ pub fn format_relative(then: DateTime<Utc>, now: DateTime<Utc>) -> String {
 }
 
 fn local_timezone_label() -> String {
-    if let Ok(tz) = std::env::var("TZ") {
-        if let Some(label) = timezone_label_from_tz(&tz) {
-            return label;
-        }
+    if let Ok(tz) = std::env::var("TZ")
+        && let Some(label) = timezone_label_from_tz(&tz)
+    {
+        return label;
     }
 
-    if let Ok(path) = fs::read_link("/etc/localtime") {
-        if let Some(path_str) = path.to_str() {
-            if let Some((_, tz)) = path_str.rsplit_once("zoneinfo/") {
-                if let Some(label) = timezone_label_from_tz(tz) {
-                    return label;
-                }
-            }
-        }
+    if let Ok(path) = fs::read_link("/etc/localtime")
+        && let Some(path_str) = path.to_str()
+        && let Some((_, tz)) = path_str.rsplit_once("zoneinfo/")
+        && let Some(label) = timezone_label_from_tz(tz)
+    {
+        return label;
     }
 
     let abbr = Local::now().format("%Z").to_string();
