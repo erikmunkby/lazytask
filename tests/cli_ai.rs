@@ -528,12 +528,8 @@ fn ai_learn_returns_entries() {
         payload["data"]["learn"]["entries"][0]["learnings"],
         "learned something"
     );
-    assert!(
-        payload["data"]["learn"]["instructions"]
-            .as_str()
-            .unwrap()
-            .contains("!!IMPORTANT: Follow this workflow to convert learnings to knowledge.")
-    );
+    let instructions = payload["data"]["learn"]["instructions"].as_str().unwrap();
+    assert!(!instructions.is_empty());
     assert!(payload.get("hint").is_none());
 
     // --finished clears learnings

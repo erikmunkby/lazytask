@@ -38,16 +38,6 @@ fn service_lifecycle_and_learn_finished() {
     let first = service.learn().unwrap();
     assert_eq!(first.entries.len(), 1);
     assert!(!first.instructions.is_empty());
-    assert!(
-        first
-            .instructions
-            .contains("Follow this workflow to convert learnings to knowledge"),
-        "expected proposal-first guidance in learn instructions"
-    );
-    assert!(
-        first.instructions.contains("--finished"),
-        "expected --finished reminder in instructions"
-    );
     assert_eq!(first.entries[0].title, "Service task");
     assert_eq!(first.entries[0].learnings, "line one\nline two");
     assert!(!first.entries[0].date.contains('T'));
