@@ -61,6 +61,7 @@ AI commands (all return JSON `{"ok": bool, "data"|"error": ...}`):
 - Keep code lean and DRY.
 - Keep non-test Rust modules small: target `<200` lines of production code per file.
 - Structure larger areas as directory modules with a thin `mod.rs` entrypoint and focused behavior files (e.g. parsing, IO, dispatch, rendering).
+- Hard rule: Do not "whack-a-mole" fix things. Understand the larger scope before fixes.
 
 ## Testing guardrails
 - Default to TDD for non-trivial changes.
@@ -70,4 +71,3 @@ AI commands (all return JSON `{"ok": bool, "data"|"error": ...}`):
 
 ## Collaboration rules
 - All `CLAUDE.md` files are symlinks to `AGENTS.md`. Only ever edit `AGENTS.md`.
-- TUI-specific contract lives in `src/tui/AGENTS.md`.
