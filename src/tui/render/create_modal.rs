@@ -41,13 +41,13 @@ pub(super) fn render_create_modal(frame: &mut Frame, state: &CreateState, main_a
     let cursor = "█";
 
     let title_display = if state.active_field == CreateField::Title {
-        format!("{}{}", state.title, cursor)
+        with_cursor(&state.title, state.cursor_pos, cursor)
     } else {
         state.title.clone()
     };
 
     let desc_display = if state.active_field == CreateField::Details {
-        format!("{}{}", state.details, cursor)
+        with_cursor(&state.details, state.cursor_pos, cursor)
     } else {
         state.details.clone()
     };
@@ -63,7 +63,7 @@ pub(super) fn render_create_modal(frame: &mut Frame, state: &CreateState, main_a
     let mut title_line = vec![
         Span::styled("# ", label_style),
         Span::styled(
-            if title_display.is_empty() {
+            if state.title.is_empty() {
                 format!("<title>{cursor}")
             } else {
                 title_display
@@ -97,23 +97,17 @@ pub(super) fn render_create_modal(frame: &mut Frame, state: &CreateState, main_a
     lines.push(Line::from(""));
     lines.push(Line::from(vec![Span::styled("details:", label_style)]));
 
-    if desc_display.is_empty() && state.active_field == CreateField::Details {
+    if state.details.is_empty() && state.active_field == CreateField::Details {
         lines.push(Line::from(vec![Span::styled(
             format!("  <details>{cursor}"),
             desc_style,
         )]));
-    } else if desc_display.is_empty() {
+    } else if state.details.is_empty() {
         lines.push(Line::from(vec![Span::styled("  <details>", desc_style)]));
     } else {
-        for desc_line in desc_display.lines() {
+        for desc_line in desc_display.split('\n') {
             lines.push(Line::from(vec![Span::styled(
                 format!("  {desc_line}"),
-                desc_style,
-            )]));
-        }
-        if desc_display.ends_with('\n') {
-            lines.push(Line::from(vec![Span::styled(
-                format!("  {cursor}"),
                 desc_style,
             )]));
         }
@@ -139,4 +133,40 @@ pub(super) fn render_create_modal(frame: &mut Frame, state: &CreateState, main_a
     );
 
     frame.render_widget(modal, area);
+}
+
+fn with_cursor(text: &str, cursor_pos: usize, cursor: &str) -> String {
+    let mut pos = cursor_pos.min(text.len());
+    while pos > 0 && !text.is_char_boundary(pos) {
+        pos -= 1;
+    }
+
+    let (left, right) = text.split_at(pos);
+    format!("{left}{cursor}{right}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::with_cursor;
+
+    #[test]
+    fn places_cursor_at_requested_position() {
+        assert_eq!(with_cursor("abcd", 2, "|"), "ab|cd");
+    }
+
+    #[test]
+    fn clamps_cursor_to_end_for_out_of_bounds_positions() {
+        assert_eq!(with_cursor("abcd", 99, "|"), "abcd|");
+    }
+
+    #[test]
+    fn handles_cursor_at_start() {
+        assert_eq!(with_cursor("abcd", 0, "|"), "|abcd");
+    }
+
+    #[test]
+    fn moves_back_to_char_boundary() {
+        let text = "aé";
+        assert_eq!(with_cursor(text, 2, "|"), "a|é");
+    }
 }
