@@ -1,115 +1,121 @@
+<div align="center">
+
 # lazytask `lt`
 
-`lt` is an AI-first local task manager with two explicit interfaces:
+**AI-first task management. Human in command.**
 
-- Human interface: keyboard-driven TUI
-- AI interface: fixed-parameter CLI commands with stable JSON envelopes
+Built in Rust. Fast to run, easy to understand.
 
-Design principle: **sophisticated simplicity**. If you can't do it on a whiteboard, you can't do it in lazytask.
+[![Built With Ratatui](https://img.shields.io/badge/Built_With_Ratatui-000?logo=ratatui&logoColor=fff)](https://ratatui.rs/)
+[![Rust](https://img.shields.io/badge/Rust-000?logo=rust&logoColor=fff)](https://www.rust-lang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Why use `lt`
+[Getting started](#getting-started) · [How it works](#how-it-works) · [Commands](#commands) · [Configuration](#configuration)
 
-- It is observable: tasks are plain markdown files on disk.
-- It is fast: low-friction TUI for human operation.
-- It is reliable for automation: strict AI command surface and machine-readable outputs.
-- It enforces focus: simple status buckets with WIP limits.
+<br>
 
-## Install
+https://github.com/erikmunkby/lazytask/raw/main/docs/assets/lazytask_recording.mp4
 
-`lazytask` is not published yet. Use these placeholders for future release channels:
+</div>
 
-```bash
-# Homebrew (placeholder)
-brew tap <ORG>/<TAP>
-brew install lazytask
+---
 
-# Cargo (placeholder)
-cargo install lazytask
+## Why lazytask?
 
-# Direct binary (placeholder)
-curl -L <RELEASE_URL>/lazytask -o lazytask
-chmod +x lazytask
-mv lazytask /usr/local/bin/lt
+**Your AI agent needs a task manager it can actually use** — and you need a way to stay in control. lazytask is both: a strict CLI for agents, a keyboard-driven TUI for humans.
+
+No sync. No server. No database. Just files.
+
+> **Sophisticated simplicity** — if you can't do it on a whiteboard, you can't do it in lazytask.
+
+## How it works
+
+lazytask has two interfaces that share the same storage:
+
+| | Human | AI agent |
+|---|---|---|
+| **Interface** | Keyboard-driven TUI | Strict CLI with JSON envelopes |
+| **Launch** | `lt` | `lt list`, `lt create`, ... |
+| **Workflow** | Navigate, create, move tasks | Create, start, complete tasks with learnings |
+
+Tasks flow through directories — what you see in your file tree *is* the state:
+
+```sh
+.tasks/
+├── todo/           # up to 20 tasks (configurable)
+├── in-progress/    # up to 3 tasks (focus!) (configurable)
+├── done/           # completed work
+├── discard/        # intentionally excluded
+└── LEARNINGS.md    # Required learnings from each completed task
 ```
 
-Current pre-release install from source:
+Each task is a single `.md` file. Moving a task from `todo` to `in-progress` is literally moving a file.
+
+> `.tasks` can be included in git, but I'd discourage it. `lazytask` tasks are meant to be post-its next to you on your desk.
+
+## No learning? No completion.
+
+Most agents finish a task and forget everything. lazytask won't let them.
+
+When an agent completes a task, it must record a **learning** — what worked, what surprised it, what to do differently. These learnings accumulate in `LEARNINGS.md`. When enough have built up, you prompt your agent that it's time to learn, and it distills those insights into concrete improvements to docs, workflows, or code — with you in control. No opaque auto-memory.
+
+**The feedback loop:** agents do work → record learnings → you trigger learning → agents distill insights → better code.
+
+## Getting started
+
+### Install
+
+Install instructions coming soon
+
+### Quick start
 
 ```bash
-git clone <REPO_URL>
-cd lazytask
-cargo install --path . --force
-# Or, if you have taskfile installed
-task install
+lt init    # creates .tasks/ layout + config file + agent guidance
+lt         # opens the TUI
 ```
 
-## Quick start
-
-```bash
-lt init
-lt
-```
-
-`lt init` creates the `.tasks` layout and appends `lt` usage guidance to `AGENTS.md` (or `CLAUDE.md` if `AGENTS.md` is missing).
-It also creates `lazytask.toml` if missing.
-
-In the TUI:
-
-- `Up/Down`: navigate tasks
-- `c`: create
-- `d`: delete
-- `u`: undo last delete
-- `s`: move selected task to `in-progress`
-- `x`: move selected task to `done`
-- `o`: open selected task file in editor
-- `q`: quit
+`lt init` also appends usage instructions to your `AGENTS.md` (or `CLAUDE.md`), so your AI agent knows how to use `lt` immediately.
 
 ## Commands
 
-Human commands:
+### Human commands
 
-- `lt`
-- `lt init`
+| Command | Description |
+|---|---|
+| `lt` | Open the TUI |
+| `lt init` | Initialize lazytask in your project |
 
-AI commands:
+### AI commands
 
-- `lt list [--status todo|in-progress|done] [--type task|bug]` (discarded tasks are omitted)
-- `lt get <query>...`
-- `lt create --title <title> --type task|bug --details <text> [--start]`
-- `lt start <query>`
-- `lt done <query> --learning "<line1>\n<line2>[\n<line3>]"`
-- `lt discard <query>`
-- `lt delete <query>`
-- `lt learn`
+All AI commands return a consistent JSON envelope: `{"ok": bool, "data": ...}` or `{"ok": false, "error": {...}}`.
 
-AI response envelope:
-
-```json
-{"ok":true,"data":{}}
-{"ok":false,"error":{"code":"<machine_code>","message":"<human_message>","details":{}}}
-```
-
-## Data on disk
-
-`lt` stores tasks and learning state in your workspace:
-
-- `.tasks/todo/`
-- `.tasks/in-progress/`
-- `.tasks/done/`
-- `.tasks/discard/` (optional side bucket for irrelevant/duplicate tasks)
-- `.tasks/LEARNINGS.md`
-- `lazytask.toml` (configuration)
-
-Task files are markdown with metadata headers and a details block.
+| Command | Description |
+|---|---|
+| `lt list [--type task\|bug] [--show-done]` | List tasks |
+| `lt get <query>...` | Get task details |
+| `lt create --title "..." --type task\|bug --details "..." [--start]` | Create a task |
+| `lt start <query>` | Move task to in-progress |
+| `lt done <query> --learning "..."` | Complete task with a learning |
+| `lt discard <query>` | Discard a task |
+| `lt learn` | Distill learnings into improvements |
 
 ## Configuration
 
-`lazytask.toml` supports user-editable runtime settings:
+`lazytask.toml` in your project root:
 
 ```toml
 [limits]
-todo = 20
-in_progress = 3
+todo = 20          # max tasks in todo
+in_progress = 3    # max tasks in progress
 
 [hints]
 learn_threshold = 35
 ```
+
+## Acknowledgements
+
+lazytask's TUI is built with [ratatui](https://github.com/ratatui/ratatui), and its TUI UX draws heavy inspiration from [lazygit](https://github.com/jesseduffield/lazygit).
+
+## License
+
+MIT
