@@ -1,3 +1,4 @@
+mod editor;
 mod errors;
 mod learning;
 mod query;

@@ -23,6 +23,7 @@ pub enum Action {
     UndoDelete,
     StartSelected,
     DoneSelected,
+    OpenSelectedInEditor,
     TaskOperationSucceeded {
         message: String,
     },

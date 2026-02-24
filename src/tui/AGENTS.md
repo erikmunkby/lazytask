@@ -9,6 +9,7 @@
 - `u`: undo the last delete in the current TUI session
 - `s`: move selected task to `in-progress`
 - `x`: move selected task to `done`
+- `o`: open selected task file in editor
 - `q`: quit
 
 ## Table columns
