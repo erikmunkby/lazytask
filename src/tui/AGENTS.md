@@ -14,7 +14,7 @@
 
 ## Table columns
 
-`Title | Status | Type | Updated | Created`
+`Title | Status | Type | Updated`
 
 Status display: `todo`, `->` (in-progress), `done`, `X` (discard, red).
 

@@ -5,13 +5,12 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::{Block, Borders, Cell, Row, Table, TableState};
 
 const DIMMED: Style = Style::new().fg(Color::DarkGray);
-const COLUMN_COUNT: usize = 6;
+const COLUMN_COUNT: usize = 5;
 const COLUMN_SPACING: u16 = 1;
 const SPACER_COL_WIDTH: u16 = 2;
 const STATUS_COL_WIDTH: u16 = 6;
 const TYPE_COL_WIDTH: u16 = 4;
 const UPDATED_COL_WIDTH: u16 = 8;
-const CREATED_COL_WIDTH: u16 = 8;
 
 fn status_display(status: TaskStatus) -> &'static str {
     match status {
@@ -41,7 +40,7 @@ pub fn render(
     let table = Table::new(rows, column_constraints())
         .column_spacing(COLUMN_SPACING)
         .header(
-            Row::new(vec!["Title", "", "Status", "Type", "Updated", "Created"])
+            Row::new(vec!["Title", "", "Status", "Type", "Updated"])
                 .style(Style::default().add_modifier(Modifier::BOLD))
                 .bottom_margin(1),
         )
@@ -82,7 +81,6 @@ fn task_row<'a>(task: &'a Task, now: chrono::DateTime<chrono::Utc>) -> Row<'a> {
         Cell::from(status_display(task.status)).style(status_style),
         Cell::from(task.task_type.as_str()).style(type_style),
         Cell::from(format_relative(task.updated_at, now)).style(DIMMED),
-        Cell::from(format_relative(task.created_at, now)).style(DIMMED),
     ])
 }
 
@@ -102,7 +100,6 @@ fn column_constraints() -> [Constraint; COLUMN_COUNT] {
         Constraint::Length(STATUS_COL_WIDTH),
         Constraint::Length(TYPE_COL_WIDTH),
         Constraint::Length(UPDATED_COL_WIDTH),
-        Constraint::Length(CREATED_COL_WIDTH),
     ]
 }
 
