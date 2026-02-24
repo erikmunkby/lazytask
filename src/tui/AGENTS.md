@@ -2,18 +2,8 @@
 
 ## Keybindings
 
-- Arrow up/down: navigate tasks
-- `c`: create a new task (always starts as `todo`)
-- `e`: edit selected task (save overwrites selected task)
-- `d`: delete selected task
-- `u`: undo the last delete in the current TUI session
-- `s`: move selected task to `in-progress`
-- `x`: move selected task to `done`
-- `o`: open selected task file in editor
-- `?`: open keybindings overlay (from normal/root mode)
-- `q`: quit
-
-Footer hints are intentionally concise: navigation/create/edit/open/quit plus `Delete: d (Undo: u)` and `Keybindings: ?`.
+Detailed keybindings live in `docs/tui_keybindings.md`.
+Keep footer hints concise: navigation/create/edit/open/quit plus `Delete: d (Undo: u)` and `Keybindings: ?`.
 
 ## Table columns
 
