@@ -12,6 +12,7 @@ pub(super) fn render_key_hints(frame: &mut Frame, area: Rect) {
         "Edit: e",
         "Start: s",
         "Done: x",
+        "Open: o",
         "Delete: d",
         "Undo delete: u",
         "Quit: q",

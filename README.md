@@ -60,6 +60,7 @@ In the TUI:
 - `u`: undo last delete
 - `s`: move selected task to `in-progress`
 - `x`: move selected task to `done`
+- `o`: open selected task file in editor
 - `q`: quit
 
 ## Commands

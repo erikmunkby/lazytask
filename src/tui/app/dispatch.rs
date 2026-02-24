@@ -151,6 +151,18 @@ impl App {
                     }
                 }
             }
+            Action::OpenSelectedInEditor => {
+                if let Some(task) = self.selected_task().cloned() {
+                    match self.service.open_task_in_editor(&task) {
+                        Ok(editor) => self.dispatch(Action::TaskOperationSucceeded {
+                            message: format!("opened \"{}\" in {editor}", task.title),
+                        }),
+                        Err(err) => self.dispatch(Action::TaskOperationFailed {
+                            message: format!("open failed: {err}"),
+                        }),
+                    }
+                }
+            }
             Action::TaskOperationSucceeded { message } => self.push_log(message, false),
             Action::TaskOperationFailed { message } => self.push_log(message, true),
             Action::Quit => self.state.should_quit = true,

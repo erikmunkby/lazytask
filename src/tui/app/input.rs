@@ -22,6 +22,7 @@ impl App {
             KeyCode::Char('u') => self.dispatch(Action::UndoDelete),
             KeyCode::Char('s') => self.dispatch(Action::StartSelected),
             KeyCode::Char('x') => self.dispatch(Action::DoneSelected),
+            KeyCode::Char('o') => self.dispatch(Action::OpenSelectedInEditor),
             KeyCode::Char('q') | KeyCode::Esc => self.dispatch(Action::Quit),
             _ => {}
         }
