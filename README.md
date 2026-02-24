@@ -14,7 +14,7 @@ Built in Rust. Fast to run, easy to understand.
 
 <br>
 
-https://github.com/erikmunkby/lazytask/raw/main/docs/assets/lazytask_recording.mp4
+![lazytask TUI demo](docs/assets/lazytask_recording.gif)
 
 </div>
 
