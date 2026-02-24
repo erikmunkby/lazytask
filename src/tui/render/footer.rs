@@ -6,17 +6,7 @@ use ratatui::widgets::Paragraph;
 
 pub(super) fn render_key_hints(frame: &mut Frame, area: Rect) {
     let key_style = Style::default().fg(Color::Cyan);
-    let keys = [
-        "Nav: ↑/↓",
-        "Create: c",
-        "Edit: e",
-        "Start: s",
-        "Done: x",
-        "Open: o",
-        "Delete: d",
-        "Undo delete: u",
-        "Quit: q",
-    ];
+    let keys = key_hints();
     let spans: Vec<Span> = keys
         .iter()
         .enumerate()
@@ -29,4 +19,37 @@ pub(super) fn render_key_hints(frame: &mut Frame, area: Rect) {
         })
         .collect();
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
+}
+
+fn key_hints() -> [&'static str; 7] {
+    [
+        "Nav: ↑/↓",
+        "Create: c",
+        "Edit: e",
+        "Open: o",
+        "Quit: q",
+        "Delete: d (Undo: u)",
+        "Keybindings: ?",
+    ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::key_hints;
+
+    #[test]
+    fn footer_keeps_only_primary_hints() {
+        assert_eq!(
+            key_hints(),
+            [
+                "Nav: ↑/↓",
+                "Create: c",
+                "Edit: e",
+                "Open: o",
+                "Quit: q",
+                "Delete: d (Undo: u)",
+                "Keybindings: ?",
+            ]
+        );
+    }
 }

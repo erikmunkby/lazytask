@@ -145,6 +145,7 @@ fn next_char_boundary(s: &str, pos: usize) -> usize {
 pub enum Mode {
     Normal,
     Creating(CreateState),
+    Keybindings,
 }
 
 #[derive(Debug, Clone)]

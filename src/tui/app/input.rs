@@ -9,6 +9,7 @@ impl App {
         match mode {
             Mode::Normal => self.on_key_normal(key),
             Mode::Creating(create) => self.on_key_creating(key, create),
+            Mode::Keybindings => self.on_key_keybindings(key),
         }
     }
 
@@ -23,7 +24,17 @@ impl App {
             KeyCode::Char('s') => self.dispatch(Action::StartSelected),
             KeyCode::Char('x') => self.dispatch(Action::DoneSelected),
             KeyCode::Char('o') => self.dispatch(Action::OpenSelectedInEditor),
+            KeyCode::Char('?') => self.state.mode = Mode::Keybindings,
             KeyCode::Char('q') | KeyCode::Esc => self.dispatch(Action::Quit),
+            _ => {}
+        }
+    }
+
+    fn on_key_keybindings(&mut self, key: KeyEvent) {
+        match key.code {
+            KeyCode::Esc | KeyCode::Enter | KeyCode::Char('?') | KeyCode::Char('q') => {
+                self.state.mode = Mode::Normal;
+            }
             _ => {}
         }
     }
