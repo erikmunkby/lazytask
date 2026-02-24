@@ -126,3 +126,62 @@ fn startup_logs_learning_hint_when_line_count_exceeds_threshold() {
     assert!(latest_log.message.contains("lt learn"));
     assert!(latest_log.message.contains("Ask your AI agent"));
 }
+
+#[test]
+fn edit_mode_cancel_keeps_task_unchanged() {
+    let temp = TempDir::new().unwrap();
+    let (service, learn_threshold) = runtime_for_path(temp.path());
+    service.init().unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Editable task".to_string(),
+            task_type: TaskType::Task,
+            details: "before".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+
+    let mut app = App::new(service, learn_threshold);
+    app.dispatch(Action::RefreshTasks);
+    app.on_key(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE));
+    app.on_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+    app.dispatch(Action::RefreshTasks);
+
+    assert!(matches!(app.state.mode, lt::tui::app::Mode::Normal));
+    assert_eq!(app.state.tasks.len(), 1);
+    assert_eq!(app.state.tasks[0].title, "Editable task");
+    assert_eq!(app.state.tasks[0].details, "before");
+}
+
+#[test]
+fn edit_submission_overwrites_selected_task() {
+    let temp = TempDir::new().unwrap();
+    let (service, learn_threshold) = runtime_for_path(temp.path());
+    service.init().unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Editable title".to_string(),
+            task_type: TaskType::Task,
+            details: "before".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+
+    let mut app = App::new(service, learn_threshold);
+    app.dispatch(Action::RefreshTasks);
+    app.dispatch(Action::EditTaskSubmitted {
+        file_name: "editable-title".to_string(),
+        title: "Edited title".to_string(),
+        task_type: TaskType::Bug,
+        details: "after".to_string(),
+    });
+
+    assert_eq!(app.state.tasks.len(), 1);
+    assert_eq!(app.state.tasks[0].title, "Edited title");
+    assert_eq!(app.state.tasks[0].task_type, TaskType::Bug);
+    assert_eq!(app.state.tasks[0].details, "after");
+}

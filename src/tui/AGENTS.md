@@ -4,6 +4,7 @@
 
 - Arrow up/down: navigate tasks
 - `c`: create a new task (always starts as `todo`)
+- `e`: edit selected task (save overwrites selected task)
 - `d`: delete selected task
 - `u`: undo the last delete in the current TUI session
 - `s`: move selected task to `in-progress`

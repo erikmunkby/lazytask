@@ -143,6 +143,27 @@ impl TaskService {
         Ok(self.storage.write_task(task).map(|_| task.clone())?)
     }
 
+    pub fn edit_task(
+        &self,
+        query: &str,
+        title: String,
+        task_type: crate::domain::TaskType,
+        details: String,
+    ) -> Result<Task, ServiceError> {
+        self.storage.require_layout()?;
+        let normalized_details = normalize_escaped_newlines(&details);
+        validate_title(&title).map_err(validation_error)?;
+        validate_details(&normalized_details, false).map_err(validation_error)?;
+
+        let all = self.storage.list_tasks(None, None)?;
+        let mut task = resolve_query(&all, query)?;
+        task.title = title.trim().to_string();
+        task.task_type = task_type;
+        task.details = normalized_details.trim_end().to_string();
+        task.updated_at = Utc::now();
+        Ok(self.storage.update_task(&task)?)
+    }
+
     fn enforce_status_limit(&self, status: TaskStatus) -> Result<(), ServiceError> {
         let limits = self.config.limits;
         let current = self.storage.list_tasks(Some(status), None)?.len();

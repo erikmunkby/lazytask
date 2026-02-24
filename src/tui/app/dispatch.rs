@@ -1,7 +1,7 @@
 use super::{App, CreateState, LOG_CAPACITY, LogEntry, Mode};
-use crate::domain::{Task, TaskStatus, TaskType};
+use crate::domain::{Task, TaskStatus};
 use crate::services::CreateTaskInput;
-use crate::tui::actions::{Action, CreateField};
+use crate::tui::actions::Action;
 use chrono::Local;
 
 impl App {
@@ -38,13 +38,12 @@ impl App {
                 self.refresh_preview();
             }
             Action::CreateTaskRequested => {
-                self.state.mode = Mode::Creating(CreateState {
-                    active_field: CreateField::Title,
-                    title: String::new(),
-                    task_type: TaskType::Task,
-                    details: String::new(),
-                    cursor_pos: 0,
-                });
+                self.state.mode = Mode::Creating(CreateState::new_create());
+            }
+            Action::EditSelectedRequested => {
+                if let Some(task) = self.selected_task().cloned() {
+                    self.state.mode = Mode::Creating(CreateState::from_task(&task));
+                }
             }
             Action::CreateTaskSubmitted {
                 title,
@@ -69,6 +68,24 @@ impl App {
                     }
                 }
             }
+            Action::EditTaskSubmitted {
+                file_name,
+                title,
+                task_type,
+                details,
+            } => match self
+                .service
+                .edit_task(&file_name, title, task_type, details)
+            {
+                Ok(task) => {
+                    self.push_log(format!("task \"{}\" updated", task.title), false);
+                    self.state.mode = Mode::Normal;
+                    self.dispatch(Action::RefreshTasks);
+                }
+                Err(err) => {
+                    self.push_log(format!("{err}"), true);
+                }
+            },
             Action::DeleteSelected => {
                 if let Some(task) = self.selected_task().cloned() {
                     match self.service.delete_task(&task.file_name) {

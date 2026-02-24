@@ -10,7 +10,14 @@ pub struct LogEntry {
 }
 
 #[derive(Debug, Clone)]
+pub enum EditorMode {
+    Create,
+    Edit { file_name: String },
+}
+
+#[derive(Debug, Clone)]
 pub struct CreateState {
+    pub editor_mode: EditorMode,
     pub active_field: CreateField,
     pub title: String,
     pub task_type: TaskType,
@@ -19,6 +26,34 @@ pub struct CreateState {
 }
 
 impl CreateState {
+    pub(super) fn new_create() -> Self {
+        Self {
+            editor_mode: EditorMode::Create,
+            active_field: CreateField::Title,
+            title: String::new(),
+            task_type: TaskType::Task,
+            details: String::new(),
+            cursor_pos: 0,
+        }
+    }
+
+    pub(super) fn from_task(task: &Task) -> Self {
+        Self {
+            editor_mode: EditorMode::Edit {
+                file_name: task.file_name.clone(),
+            },
+            active_field: CreateField::Title,
+            title: task.title.clone(),
+            task_type: task.task_type,
+            details: task.details.clone(),
+            cursor_pos: task.title.len(),
+        }
+    }
+
+    pub(crate) fn is_editing(&self) -> bool {
+        matches!(self.editor_mode, EditorMode::Edit { .. })
+    }
+
     pub(super) fn active_text(&self) -> &str {
         match self.active_field {
             CreateField::Title => &self.title,

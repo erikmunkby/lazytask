@@ -1,4 +1,4 @@
-use super::{App, CreateState, Mode};
+use super::{App, CreateState, EditorMode, Mode};
 use crate::domain::TITLE_CHAR_LIMIT;
 use crate::tui::actions::Action;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -17,6 +17,7 @@ impl App {
             KeyCode::Up => self.dispatch(Action::MoveSelectionUp),
             KeyCode::Down => self.dispatch(Action::MoveSelectionDown),
             KeyCode::Char('c') => self.dispatch(Action::CreateTaskRequested),
+            KeyCode::Char('e') => self.dispatch(Action::EditSelectedRequested),
             KeyCode::Char('d') => self.dispatch(Action::DeleteSelected),
             KeyCode::Char('u') => self.dispatch(Action::UndoDelete),
             KeyCode::Char('s') => self.dispatch(Action::StartSelected),
@@ -41,11 +42,19 @@ impl App {
                 return;
             }
             self.state.mode = Mode::Normal;
-            self.dispatch(Action::CreateTaskSubmitted {
-                title: create.title,
-                task_type: create.task_type,
-                details: create.details,
-            });
+            match create.editor_mode {
+                EditorMode::Create => self.dispatch(Action::CreateTaskSubmitted {
+                    title: create.title,
+                    task_type: create.task_type,
+                    details: create.details,
+                }),
+                EditorMode::Edit { file_name } => self.dispatch(Action::EditTaskSubmitted {
+                    file_name,
+                    title: create.title,
+                    task_type: create.task_type,
+                    details: create.details,
+                }),
+            }
             return;
         }
 

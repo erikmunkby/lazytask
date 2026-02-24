@@ -121,14 +121,20 @@ pub(super) fn render_create_modal(frame: &mut Frame, state: &CreateState, main_a
 
     lines.push(Line::from(""));
     lines.push(Line::from(vec![Span::styled(
-        "Tab/↑↓: navigate | Enter: next | C-s: submit | Esc: cancel",
+        "Tab/↑↓: navigate | Enter: next | C-s: save | Esc: cancel",
         hint_style,
     )]));
+
+    let modal_title = if state.is_editing() {
+        "Edit Task"
+    } else {
+        "Create Task"
+    };
 
     let modal = Paragraph::new(lines).block(
         Block::default()
             .borders(Borders::ALL)
-            .title("Create Task")
+            .title(modal_title)
             .border_style(Style::default().fg(Color::Cyan)),
     );
 

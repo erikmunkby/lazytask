@@ -4,7 +4,7 @@ mod state;
 
 use crate::services::TaskService;
 
-pub use state::{AppState, CreateState, LogEntry, Mode};
+pub use state::{AppState, CreateState, EditorMode, LogEntry, Mode};
 
 pub(super) const LOG_CAPACITY: usize = 30;
 

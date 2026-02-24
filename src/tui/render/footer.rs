@@ -9,6 +9,7 @@ pub(super) fn render_key_hints(frame: &mut Frame, area: Rect) {
     let keys = [
         "Nav: ↑/↓",
         "Create: c",
+        "Edit: e",
         "Start: s",
         "Done: x",
         "Delete: d",

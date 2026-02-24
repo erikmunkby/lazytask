@@ -131,3 +131,64 @@ fn discard_task_moves_task_to_discard() {
     let discarded = service.discard_task("old-duplicate").unwrap();
     assert_eq!(discarded.status, TaskStatus::Discard);
 }
+
+#[test]
+fn edit_task_overwrites_selected_task() {
+    let temp = TempDir::new().unwrap();
+    let service = service_for_temp(&temp);
+    service.init().unwrap();
+
+    let created = service
+        .create_task(CreateTaskInput {
+            title: "Edit me".to_string(),
+            task_type: TaskType::Task,
+            details: "before".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+
+    let edited = service
+        .edit_task(
+            "edit-me",
+            "Edited title".to_string(),
+            TaskType::Bug,
+            "after".to_string(),
+        )
+        .unwrap();
+
+    assert_eq!(edited.file_name, created.file_name);
+    assert_eq!(edited.status, created.status);
+    assert_eq!(edited.title, "Edited title");
+    assert_eq!(edited.task_type, TaskType::Bug);
+    assert_eq!(edited.details, "after");
+    assert!(edited.updated_at >= created.updated_at);
+}
+
+#[test]
+fn edit_task_normalizes_escaped_newlines_in_details() {
+    let temp = TempDir::new().unwrap();
+    let service = service_for_temp(&temp);
+    service.init().unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Edit escaped details".to_string(),
+            task_type: TaskType::Task,
+            details: "before".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+
+    let edited = service
+        .edit_task(
+            "edit-escaped-details",
+            "Edit escaped details".to_string(),
+            TaskType::Task,
+            "line one\\nline two".to_string(),
+        )
+        .unwrap();
+
+    assert_eq!(edited.details, "line one\nline two");
+}

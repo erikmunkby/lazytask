@@ -7,7 +7,14 @@ pub enum Action {
     MoveSelectionUp,
     MoveSelectionDown,
     CreateTaskRequested,
+    EditSelectedRequested,
     CreateTaskSubmitted {
+        title: String,
+        task_type: TaskType,
+        details: String,
+    },
+    EditTaskSubmitted {
+        file_name: String,
         title: String,
         task_type: TaskType,
         details: String,
