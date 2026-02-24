@@ -1,5 +1,6 @@
 mod create_modal;
 mod footer;
+mod keybindings_overlay;
 mod layout;
 
 use crate::tui::app::{AppState, Mode};
@@ -33,5 +34,8 @@ pub fn render(frame: &mut Frame, state: &AppState) {
 
     if let Mode::Creating(create_state) = &state.mode {
         create_modal::render_create_modal(frame, create_state, main_area);
+    }
+    if matches!(state.mode, Mode::Keybindings) {
+        keybindings_overlay::render_keybindings_overlay(frame, main_area);
     }
 }

@@ -10,7 +10,10 @@
 - `s`: move selected task to `in-progress`
 - `x`: move selected task to `done`
 - `o`: open selected task file in editor
+- `?`: open keybindings overlay (from normal/root mode)
 - `q`: quit
+
+Footer hints are intentionally concise: navigation/create/edit/open/quit plus `Delete: d (Undo: u)` and `Keybindings: ?`.
 
 ## Table columns
 
