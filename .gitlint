@@ -1,0 +1,6 @@
+[general]
+ignore-merge-commits=false
+ignore=B6
+
+[title-match-regex]
+regex=^((feat|fix|test)\((cli|tui)\)|(docs|chore|ci|perf)): .+

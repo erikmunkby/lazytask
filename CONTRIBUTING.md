@@ -24,6 +24,34 @@ task test # Run all tests
 task install # Install lazytask globally, useful for testing lazytask in other project
 ```
 
+## Git hooks
+
+This repo includes `prek` config in `prek.toml` and commit-message linting via `gitlint`.
+
+Install hooks:
+
+```bash
+prek install
+```
+
+Run hooks manually:
+
+```bash
+prek run --all-files
+```
+
+Commit titles are enforced through `.gitlint`:
+
+- `feat(cli|tui): ...`
+- `fix(cli|tui): ...`
+- `test(cli|tui): ...`
+- `docs: ...`
+- `chore: ...`
+- `ci: ...`
+- `perf: ...`
+
+## Experimenting on your machine
+
 When experimenting with lazytask commands in-repo locally, use `cargo run --`.
 Do not pass `lt` again after `--` (for example `cargo run -- lt`), because that becomes `lt lt`.
 Example:
