@@ -6,10 +6,13 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
+
+const MODAL_WIDTH_PERCENT: u16 = 82;
+const MODAL_HEIGHT_PERCENT: u16 = 68;
 
 pub(super) fn render_create_modal(frame: &mut Frame, state: &CreateState, main_area: Rect) {
-    let area = centered_rect(70, 40, main_area);
+    let area = centered_rect(MODAL_WIDTH_PERCENT, MODAL_HEIGHT_PERCENT, main_area);
     frame.render_widget(Clear, area);
 
     let label_style = Style::default().fg(Color::Magenta);
@@ -125,12 +128,14 @@ pub(super) fn render_create_modal(frame: &mut Frame, state: &CreateState, main_a
         "Create Task"
     };
 
-    let modal = Paragraph::new(lines).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(modal_title)
-            .border_style(Style::default().fg(Color::Cyan)),
-    );
+    let modal = Paragraph::new(lines)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(modal_title)
+                .border_style(Style::default().fg(Color::Cyan)),
+        )
+        .wrap(Wrap { trim: false });
 
     frame.render_widget(modal, area);
 }
