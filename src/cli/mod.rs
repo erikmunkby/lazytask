@@ -31,7 +31,7 @@ pub fn run() -> Result<()> {
                             "Use `lt list`",
                             "Use `lt get <query>`",
                             "Use `lt create --title ... --type task|bug --details ...`",
-                            "Use `lt discard <query>`"
+                            "Use `lt discard <query> --discard-note ...`"
                         ]
                     }),
                 );

@@ -85,7 +85,7 @@ Commands (all return JSON):
   lt create --title "<title>" --type task|bug --details "<desc>" [--start]
   lt start "<title>"
   lt done "<title>" --learning "<learning>"
-  lt discard "<title>"  # won't do, removes from active lists
+  lt discard "<title>" --discard-note "<note>"  # won't do, removes from active lists
   lt learn
 
 Learnings (required with `lt done`):

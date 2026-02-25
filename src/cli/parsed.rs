@@ -22,7 +22,7 @@ pub(super) fn run_parsed(cli: Cli) -> Result<()> {
                             "Use `lt list`",
                             "Use `lt get <query>`",
                             "Use `lt create --title ... --type task|bug --details ...`",
-                            "Use `lt discard <query>`"
+                            "Use `lt discard <query> --discard-note ...`"
                         ]
                     }),
                 );

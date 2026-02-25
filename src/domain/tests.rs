@@ -41,6 +41,18 @@ fn parse_learning_lines_normalizes_escaped_newlines() {
 }
 
 #[test]
+fn validates_discard_note_length_and_normalization() {
+    let normalized = validate_discard_note("  why\\nnot  ").unwrap();
+    assert_eq!(normalized, "why\nnot");
+
+    let empty = validate_discard_note("   ").unwrap_err();
+    assert!(empty.to_string().contains("1-120"));
+
+    let too_long = validate_discard_note(&"x".repeat(121)).unwrap_err();
+    assert!(too_long.to_string().contains("1-120"));
+}
+
+#[test]
 fn formats_local_human_without_rfc3339_markers() {
     let ts = Utc.with_ymd_and_hms(2026, 2, 22, 6, 30, 45).unwrap();
     let formatted = format_local_human(ts);

@@ -1,4 +1,4 @@
-use super::{DomainError, TITLE_CHAR_LIMIT, normalize_file_name};
+use super::{DomainError, TITLE_CHAR_LIMIT, normalize_escaped_newlines, normalize_file_name};
 
 pub fn validate_title(title: &str) -> Result<(), DomainError> {
     if title.trim().is_empty() {
@@ -30,4 +30,17 @@ pub fn validate_details(details: &str, required: bool) -> Result<(), DomainError
     }
 
     Ok(())
+}
+
+pub fn validate_discard_note(discard_note: &str) -> Result<String, DomainError> {
+    let normalized = normalize_escaped_newlines(discard_note);
+    let trimmed = normalized.trim();
+    let len = trimmed.chars().count();
+    if len == 0 || len > 120 {
+        return Err(DomainError::ValidationError(
+            "discard note must be 1-120 characters".to_string(),
+        ));
+    }
+
+    Ok(trimmed.to_string())
 }

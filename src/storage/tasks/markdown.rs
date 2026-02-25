@@ -5,6 +5,12 @@ use std::fs;
 use std::path::Path;
 use std::str::FromStr;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Section {
+    DiscardNote,
+    Details,
+}
+
 impl Storage {
     pub(super) fn collect_bucket_tasks(
         &self,
@@ -58,22 +64,13 @@ impl Storage {
         let mut task_type = TaskType::Task;
         let mut created_at: Option<DateTime<Utc>> = None;
         let mut updated_at: Option<DateTime<Utc>> = None;
+        let mut discard_note = Vec::new();
         let mut details = Vec::new();
-        let mut in_details = false;
+        let mut section = None;
 
         for line in lines {
-            if in_details {
-                if let Some(detail_line) = line.strip_prefix("  ") {
-                    details.push(detail_line.to_string());
-                } else if line.is_empty() {
-                    details.push(String::new());
-                } else {
-                    details.push(line.to_string());
-                }
-                continue;
-            }
-
             if let Some(value) = line.strip_prefix("status:") {
+                section = None;
                 if let Ok(parsed) = TaskStatus::from_str(value.trim()) {
                     status = parsed;
                 }
@@ -81,6 +78,7 @@ impl Storage {
             }
 
             if let Some(value) = line.strip_prefix("type:") {
+                section = None;
                 if let Ok(parsed) = TaskType::from_str(value.trim()) {
                     task_type = parsed;
                 }
@@ -88,6 +86,7 @@ impl Storage {
             }
 
             if let Some(value) = line.strip_prefix("created:") {
+                section = None;
                 if let Ok(parsed) = parse_utc(value.trim()) {
                     created_at = Some(parsed);
                 }
@@ -95,17 +94,38 @@ impl Storage {
             }
 
             if let Some(value) = line.strip_prefix("updated:") {
+                section = None;
                 if let Ok(parsed) = parse_utc(value.trim()) {
                     updated_at = Some(parsed);
                 }
                 continue;
             }
 
+            if line.trim() == "discard-note:" {
+                section = Some(Section::DiscardNote);
+                continue;
+            }
+
             if line.trim() == "details:" {
-                in_details = true;
+                section = Some(Section::Details);
+                continue;
+            }
+
+            match section {
+                Some(Section::DiscardNote) => push_section_line(line, &mut discard_note),
+                Some(Section::Details) => push_section_line(line, &mut details),
+                None => {}
             }
         }
 
+        let discard_note = {
+            let joined = discard_note.join("\n").trim_end().to_string();
+            if joined.trim().is_empty() {
+                None
+            } else {
+                Some(joined)
+            }
+        };
         let details = details.join("\n").trim_end().to_string();
 
         let now = Utc::now();
@@ -120,6 +140,7 @@ impl Storage {
             file_name,
             status,
             task_type,
+            discard_note,
             details,
             created_at: created_at.unwrap_or(now),
             updated_at: updated_at.unwrap_or(now),
@@ -133,10 +154,26 @@ impl Storage {
         out.push_str(&format!("type: {}\n", task.task_type));
         out.push_str(&format!("created: {}\n", format_utc(task.created_at)));
         out.push_str(&format!("updated: {}\n", format_utc(task.updated_at)));
+        if let Some(discard_note) = &task.discard_note {
+            out.push_str("discard-note:\n");
+            for line in discard_note.lines() {
+                out.push_str(&format!("  {}\n", line));
+            }
+        }
         out.push_str("details:\n");
         for line in task.details.lines() {
             out.push_str(&format!("  {}\n", line));
         }
         out
+    }
+}
+
+fn push_section_line(line: &str, into: &mut Vec<String>) {
+    if let Some(section_line) = line.strip_prefix("  ") {
+        into.push(section_line.to_string());
+    } else if line.is_empty() {
+        into.push(String::new());
+    } else {
+        into.push(line.to_string());
     }
 }

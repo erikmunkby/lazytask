@@ -74,9 +74,12 @@ pub(super) fn run_ai_command(
             let hint = learnings_hint(service, config);
             Ok((json!({ "task": to_task_data(&task, now) }), hint))
         }
-        Commands::Discard { query } => {
+        Commands::Discard {
+            query,
+            discard_note,
+        } => {
             let now = chrono::Utc::now();
-            let task = service.discard_task(&query)?;
+            let task = service.discard_task_with_note(&query, &discard_note)?;
             Ok((json!({ "task": to_task_data(&task, now) }), None))
         }
         Commands::Delete { query } => {
@@ -117,6 +120,7 @@ fn to_task_data(task: &Task, now: chrono::DateTime<chrono::Utc>) -> TaskData {
         title: task.title.clone(),
         status: task.status.as_str().to_string(),
         task_type: task.task_type.as_str().to_string(),
+        discard_note: task.discard_note.clone(),
         details: task.details.clone(),
         updated: format_relative(task.updated_at, now),
     }

@@ -96,7 +96,7 @@ All AI commands return a consistent JSON envelope: `{"ok": bool, "data": ...}` o
 | `lt create --title "..." --type task\|bug --details "..." [--start]` | Create a task |
 | `lt start <query>` | Move task to in-progress |
 | `lt done <query> --learning "..."` | Complete task with a learning |
-| `lt discard <query>` | Discard a task |
+| `lt discard <query> --discard-note "..."` | Discard a task |
 | `lt learn` | Distill learnings into improvements |
 
 ## Configuration
