@@ -1,6 +1,7 @@
 use super::*;
 use crate::config::load_for_workspace_root;
 use crate::domain::{TaskStatus, TaskType};
+use std::fs;
 use tempfile::TempDir;
 
 fn service_for_temp(temp: &TempDir) -> TaskService {
@@ -191,4 +192,61 @@ fn edit_task_normalizes_escaped_newlines_in_details() {
         .unwrap();
 
     assert_eq!(edited.details, "line one\nline two");
+}
+
+#[test]
+fn cleanup_expired_terminal_tasks_deletes_done_and_discard_by_ttl() {
+    let temp = TempDir::new().unwrap();
+    fs::write(
+        temp.path().join("lazytask.toml"),
+        "[retention]\ndone_discard_ttl_days = 7\n",
+    )
+    .unwrap();
+    let service = service_for_temp(&temp);
+    service.init().unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Old done".to_string(),
+            task_type: TaskType::Task,
+            details: "old".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+    service.done_task_without_learning("old-done").unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Old discard".to_string(),
+            task_type: TaskType::Task,
+            details: "old".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+    service.discard_task("old-discard").unwrap();
+
+    let done_path = temp.path().join(".tasks/done/old-done.md");
+    let discard_path = temp.path().join(".tasks/discard/old-discard.md");
+    for path in [&done_path, &discard_path] {
+        let content = fs::read_to_string(path).unwrap();
+        let rewritten = content
+            .lines()
+            .map(|line| {
+                if line.starts_with("updated: ") {
+                    "updated: 2000-01-01T00:00:00Z".to_string()
+                } else {
+                    line.to_string()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        fs::write(path, format!("{rewritten}\n")).unwrap();
+    }
+
+    let deleted = service.cleanup_expired_terminal_tasks().unwrap();
+    assert_eq!(deleted, 2);
+    assert!(!done_path.exists());
+    assert!(!discard_path.exists());
 }

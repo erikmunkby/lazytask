@@ -71,6 +71,7 @@ struct Runtime {
 fn load_runtime() -> Result<Runtime, ServiceError> {
     let app_config = config::load_from_current_dir()?;
     let service = TaskService::new(app_config.clone());
+    service.cleanup_expired_terminal_tasks()?;
     Ok(Runtime {
         service,
         config: app_config,

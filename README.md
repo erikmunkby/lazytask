@@ -110,6 +110,9 @@ in_progress = 3    # max tasks in progress
 
 [hints]
 learn_threshold = 35
+
+[retention]
+done_discard_ttl_days = 7 # auto-delete done/discard tasks older than this many days
 ```
 
 ## Acknowledgements

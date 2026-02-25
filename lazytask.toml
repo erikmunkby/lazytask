@@ -4,3 +4,6 @@ in_progress = 3 # max in-progress tasks
 
 [hints]
 learn_threshold = 35 # show `lt learn` hint after this many LEARNINGS.md lines
+
+[retention]
+done_discard_ttl_days = 7 # auto-delete done/discard tasks older than this many days

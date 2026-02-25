@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use serde_json::Value;
+use std::fs;
 use tempfile::TempDir;
 
 fn lt_command() -> Command {
@@ -40,6 +41,24 @@ fn create_task_of_type(temp: &TempDir, title: &str, task_type: &str) {
 
 fn create_task(temp: &TempDir, title: &str) {
     create_task_of_type(temp, title, "task");
+}
+
+fn write_task_file(
+    temp: &TempDir,
+    bucket: &str,
+    file_name: &str,
+    title: &str,
+    status: &str,
+    updated: &str,
+) {
+    let path = temp.path().join(format!(".tasks/{bucket}/{file_name}.md"));
+    fs::write(
+        path,
+        format!(
+            "# {title}\nstatus: {status}\ntype: task\ncreated: 2000-01-01T00:00:00Z\nupdated: {updated}\ndetails:\n  seeded\n"
+        ),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -126,6 +145,79 @@ fn init_from_nested_git_workspace_writes_config_at_workspace_root() {
     assert!(root.join("lazytask.toml").exists());
     assert!(root.join(".tasks").is_dir());
     assert!(!root.join("nested/deep/lazytask.toml").exists());
+}
+
+#[test]
+fn init_backfills_missing_keys_without_overwriting_existing_values() {
+    let temp = TempDir::new().unwrap();
+    fs::write(
+        temp.path().join("lazytask.toml"),
+        "[limits]\ntodo = 9 # custom todo limit\n",
+    )
+    .unwrap();
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .args(["init"])
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+
+    let body = fs::read_to_string(temp.path().join("lazytask.toml")).unwrap();
+    assert!(body.contains("todo = 9 # custom todo limit"));
+    assert!(body.contains("in_progress = 3"));
+    assert!(body.contains("[hints]"));
+    assert!(body.contains("learn_threshold = 35"));
+    assert!(body.contains("[retention]"));
+    assert!(body.contains("done_discard_ttl_days = 7"));
+}
+
+#[test]
+fn runtime_cleanup_removes_expired_done_and_discard_before_list() {
+    let temp = init_temp();
+    create_task(&temp, "Recent done");
+    lt_command()
+        .current_dir(temp.path())
+        .args(["done", "Recent done", "--learning", "learning"])
+        .output()
+        .unwrap();
+
+    write_task_file(
+        &temp,
+        "done",
+        "expired-done",
+        "Expired done",
+        "done",
+        "2000-01-01T00:00:00Z",
+    );
+    write_task_file(
+        &temp,
+        "discard",
+        "expired-discard",
+        "Expired discard",
+        "discard",
+        "2000-01-01T00:00:00Z",
+    );
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .args(["list", "--show-done"])
+        .output()
+        .unwrap();
+    let payload = parse_json(&output.stdout);
+
+    assert!(output.status.success());
+    let tasks = payload["data"]["tasks"].as_array().unwrap();
+    assert_eq!(tasks.len(), 1);
+    assert_eq!(tasks[0]["title"], "Recent done");
+    assert!(!temp.path().join(".tasks/done/expired-done.md").exists());
+    assert!(
+        !temp
+            .path()
+            .join(".tasks/discard/expired-discard.md")
+            .exists()
+    );
 }
 
 #[test]
