@@ -30,23 +30,15 @@ pub fn render(frame: &mut Frame, area: ratatui::layout::Rect, preview_text: &str
                 };
                 let rendered_value = display_metadata_value(key, value);
                 let value_style = metadata_value_style(key, value);
-                let label_style = if key == "discard-note" {
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().fg(Color::Magenta)
-                };
                 return Line::from(vec![
-                    Span::styled(format!("{key}:"), label_style),
+                    Span::styled(format!("{key}:"), metadata_label_style()),
                     Span::raw(" "),
                     Span::styled(rendered_value, value_style),
                 ]);
             }
 
             if section == Some("discard-note") {
-                return Line::from(Span::styled(
-                    line.to_string(),
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                ));
+                return Line::from(Span::styled(line.to_string(), Style::default().fg(Color::Red)));
             }
 
             Line::from(line.to_string())
@@ -84,6 +76,10 @@ fn display_metadata_value(key: &str, value: &str) -> String {
     }
 }
 
+fn metadata_label_style() -> Style {
+    Style::default().fg(Color::Magenta)
+}
+
 fn metadata_value_style(key: &str, value: &str) -> Style {
     match key {
         "status" => match TaskStatus::from_str(value) {
@@ -99,15 +95,17 @@ fn metadata_value_style(key: &str, value: &str) -> Style {
             Err(_) => Style::default(),
         },
         "created" | "updated" => DIMMED,
-        "discard-note" => Style::new().fg(Color::Red).add_modifier(Modifier::BOLD),
+        "discard-note" => Style::new().fg(Color::Red),
         _ => Style::default(),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{display_metadata_value, metadata_value_style, try_parse_metadata};
-    use ratatui::style::Color;
+    use super::{
+        display_metadata_value, metadata_label_style, metadata_value_style, try_parse_metadata,
+    };
+    use ratatui::style::{Color, Modifier};
 
     #[test]
     fn parses_metadata_keys_and_trims_value() {
@@ -129,6 +127,7 @@ mod tests {
 
     #[test]
     fn matches_status_and_type_colors_with_table() {
+        assert_eq!(metadata_label_style().fg, Some(Color::Magenta));
         assert_eq!(
             metadata_value_style("status", "todo").fg,
             Some(Color::DarkGray)
@@ -150,6 +149,10 @@ mod tests {
         assert_eq!(
             metadata_value_style("discard-note", "outdated").fg,
             Some(Color::Red)
+        );
+        assert_eq!(
+            metadata_value_style("discard-note", "outdated").add_modifier,
+            Modifier::empty()
         );
     }
 }
