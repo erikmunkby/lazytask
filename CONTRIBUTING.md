@@ -42,13 +42,13 @@ prek run --all-files
 
 Commit titles are enforced through `.gitlint`:
 
-- `feat(cli|tui): ...`
-- `fix(cli|tui): ...`
-- `test(cli|tui): ...`
-- `docs: ...`
-- `chore: ...`
-- `ci: ...`
-- `perf: ...`
+- `feat(cli|tui): ...` (scope required)
+- `fix(cli|tui): ...` (scope required)
+- `test(cli|tui): ...` (scope required)
+- `docs: ...` or `docs(cli|tui): ...`
+- `chore: ...` or `chore(cli|tui): ...`
+- `ci: ...` or `ci(cli|tui): ...`
+- `perf: ...` or `perf(cli|tui): ...`
 
 ## Experimenting on your machine
 
