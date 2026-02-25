@@ -1,5 +1,5 @@
 use super::ServiceError;
-use crate::domain::Task;
+use crate::domain::{Task, TaskStatus};
 
 pub(super) fn resolve_query(tasks: &[Task], query: &str) -> Result<Task, ServiceError> {
     let needle = query.trim().to_lowercase();
@@ -13,6 +13,9 @@ pub(super) fn resolve_query(tasks: &[Task], query: &str) -> Result<Task, Service
     let mut fuzzy = Vec::new();
 
     for task in tasks {
+        if task.status == TaskStatus::Discard {
+            continue;
+        }
         let title = task.title.to_lowercase();
         let file_name = task.file_name.to_lowercase();
         if title == needle || file_name == needle {

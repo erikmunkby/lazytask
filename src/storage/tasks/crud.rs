@@ -36,16 +36,27 @@ impl Storage {
         &self,
         file_name: &str,
     ) -> Result<Option<Task>, StorageError> {
+        self.find_task_by_exact_file_name_in_statuses(
+            file_name,
+            &[
+                TaskStatus::Todo,
+                TaskStatus::InProgress,
+                TaskStatus::Done,
+                TaskStatus::Discard,
+            ],
+        )
+    }
+
+    pub fn find_task_by_exact_file_name_in_statuses(
+        &self,
+        file_name: &str,
+        statuses: &[TaskStatus],
+    ) -> Result<Option<Task>, StorageError> {
         let md_name = format!("{file_name}.md");
-        for status in [
-            TaskStatus::Todo,
-            TaskStatus::InProgress,
-            TaskStatus::Done,
-            TaskStatus::Discard,
-        ] {
-            let path = self.bucket_path(status).join(&md_name);
+        for status in statuses {
+            let path = self.bucket_path(*status).join(&md_name);
             if path.is_file() {
-                return Ok(Some(self.parse_task_file(&path, status)?));
+                return Ok(Some(self.parse_task_file(&path, *status)?));
             }
         }
         Ok(None)
@@ -75,6 +86,7 @@ impl Storage {
             file_name,
             status,
             task_type,
+            discard_note: None,
             details: details.trim_end().to_string(),
             created_at: now,
             updated_at: now,
@@ -103,6 +115,9 @@ impl Storage {
         let mut updated = task.clone();
         updated.status = new_status;
         updated.updated_at = updated_at;
+        if new_status != TaskStatus::Discard {
+            updated.discard_note = None;
+        }
 
         fs::create_dir_all(self.bucket_path(new_status))?;
         let new_path = self.task_path(&updated);

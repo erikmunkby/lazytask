@@ -8,27 +8,48 @@ use std::str::FromStr;
 const DIMMED: Style = Style::new().fg(Color::DarkGray);
 
 pub fn render(frame: &mut Frame, area: ratatui::layout::Rect, preview_text: &str) {
+    let mut section = None;
     let lines: Vec<Line> = preview_text
         .lines()
         .map(|line| {
             if line.starts_with('#') {
-                Line::from(Span::styled(
+                section = None;
+                return Line::from(Span::styled(
                     line.to_string(),
                     Style::default()
                         .fg(Color::Blue)
                         .add_modifier(Modifier::BOLD),
-                ))
-            } else if let Some((key, value)) = try_parse_metadata(line) {
+                ));
+            }
+
+            if let Some((key, value)) = try_parse_metadata(line) {
+                section = if key == "discard-note" {
+                    Some("discard-note")
+                } else {
+                    None
+                };
                 let rendered_value = display_metadata_value(key, value);
                 let value_style = metadata_value_style(key, value);
-                Line::from(vec![
-                    Span::styled(format!("{key}:"), Style::default().fg(Color::Magenta)),
+                let label_style = if key == "discard-note" {
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(Color::Magenta)
+                };
+                return Line::from(vec![
+                    Span::styled(format!("{key}:"), label_style),
                     Span::raw(" "),
                     Span::styled(rendered_value, value_style),
-                ])
-            } else {
-                Line::from(line.to_string())
+                ]);
             }
+
+            if section == Some("discard-note") {
+                return Line::from(Span::styled(
+                    line.to_string(),
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                ));
+            }
+
+            Line::from(line.to_string())
         })
         .collect();
 
@@ -39,7 +60,14 @@ pub fn render(frame: &mut Frame, area: ratatui::layout::Rect, preview_text: &str
 }
 
 fn try_parse_metadata(line: &str) -> Option<(&str, &str)> {
-    let keys = ["status", "type", "created", "updated", "details"];
+    let keys = [
+        "status",
+        "type",
+        "created",
+        "updated",
+        "discard-note",
+        "details",
+    ];
     let (key, value) = line.split_once(':')?;
     if keys.contains(&key) {
         return Some((key, value.trim()));
@@ -71,6 +99,7 @@ fn metadata_value_style(key: &str, value: &str) -> Style {
             Err(_) => Style::default(),
         },
         "created" | "updated" => DIMMED,
+        "discard-note" => Style::new().fg(Color::Red).add_modifier(Modifier::BOLD),
         _ => Style::default(),
     }
 }
@@ -85,6 +114,10 @@ mod tests {
         let (key, value) = try_parse_metadata("status: in-progress").unwrap();
         assert_eq!(key, "status");
         assert_eq!(value, "in-progress");
+
+        let (key, value) = try_parse_metadata("discard-note: stale").unwrap();
+        assert_eq!(key, "discard-note");
+        assert_eq!(value, "stale");
     }
 
     #[test]
@@ -114,5 +147,9 @@ mod tests {
         );
         assert_eq!(metadata_value_style("type", "task").fg, Some(Color::Blue));
         assert_eq!(metadata_value_style("type", "bug").fg, Some(Color::Red));
+        assert_eq!(
+            metadata_value_style("discard-note", "outdated").fg,
+            Some(Color::Red)
+        );
     }
 }

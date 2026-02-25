@@ -120,6 +120,43 @@ fn service_discard_moves_task_to_discard_status() {
 }
 
 #[test]
+fn service_discard_with_note_and_recreate_same_title() {
+    let temp = TempDir::new().unwrap();
+    let service = service_for_path(temp.path());
+    service.init().unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Recreate me".to_string(),
+            task_type: TaskType::Task,
+            details: "desc".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+
+    let discarded = service
+        .discard_task_with_note("recreate-me", "line one\\nline two")
+        .unwrap();
+    assert_eq!(
+        discarded.discard_note.as_deref(),
+        Some("line one\nline two")
+    );
+
+    let recreated = service
+        .create_task(CreateTaskInput {
+            title: "Recreate me".to_string(),
+            task_type: TaskType::Task,
+            details: "new desc".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+
+    assert_eq!(recreated.status, TaskStatus::Todo);
+}
+
+#[test]
 fn in_progress_limit_blocks_fourth_task() {
     let temp = TempDir::new().unwrap();
     let service = service_for_path(temp.path());

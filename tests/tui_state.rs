@@ -185,3 +185,72 @@ fn edit_submission_overwrites_selected_task() {
     assert_eq!(app.state.tasks[0].task_type, TaskType::Bug);
     assert_eq!(app.state.tasks[0].details, "after");
 }
+
+#[test]
+fn discarded_task_cannot_be_edited_started_or_done() {
+    let temp = TempDir::new().unwrap();
+    let (service, learn_threshold) = runtime_for_path(temp.path());
+    service.init().unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Discarded task".to_string(),
+            task_type: TaskType::Task,
+            details: "before".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+    service.discard_task("discarded-task").unwrap();
+
+    let mut app = App::new(service, learn_threshold);
+    app.dispatch(Action::RefreshTasks);
+
+    app.on_key(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE));
+    assert!(matches!(app.state.mode, lt::tui::app::Mode::Normal));
+    assert_eq!(
+        app.state.log_entries.back().unwrap().message,
+        "discarded tasks are terminal; delete instead"
+    );
+
+    app.dispatch(Action::StartSelected);
+    assert_eq!(
+        app.state.log_entries.back().unwrap().message,
+        "start failed: discarded tasks are terminal"
+    );
+
+    app.dispatch(Action::DoneSelected);
+    assert_eq!(
+        app.state.log_entries.back().unwrap().message,
+        "done failed: discarded tasks are terminal"
+    );
+}
+
+#[test]
+fn deleting_discarded_task_does_not_offer_undo() {
+    let temp = TempDir::new().unwrap();
+    let (service, learn_threshold) = runtime_for_path(temp.path());
+    service.init().unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Discard and delete".to_string(),
+            task_type: TaskType::Task,
+            details: "before".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+    service.discard_task("discard-and-delete").unwrap();
+
+    let mut app = App::new(service, learn_threshold);
+    app.dispatch(Action::RefreshTasks);
+    app.dispatch(Action::DeleteSelected);
+
+    assert_eq!(app.state.tasks.len(), 0);
+    assert!(app.state.last_deleted.is_none());
+    assert_eq!(
+        app.state.log_entries.back().unwrap().message,
+        "discarded task \"Discard and delete\" deleted"
+    );
+}

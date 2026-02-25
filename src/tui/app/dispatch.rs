@@ -42,6 +42,13 @@ impl App {
             }
             Action::EditSelectedRequested => {
                 if let Some(task) = self.selected_task().cloned() {
+                    if task.status == TaskStatus::Discard {
+                        self.push_log(
+                            "discarded tasks are terminal; delete instead".to_string(),
+                            true,
+                        );
+                        return;
+                    }
                     self.state.mode = Mode::Creating(CreateState::from_task(&task));
                 }
             }
@@ -88,15 +95,22 @@ impl App {
             },
             Action::DeleteSelected => {
                 if let Some(task) = self.selected_task().cloned() {
-                    match self.service.delete_task(&task.file_name) {
+                    match self.service.delete_task_exact(&task) {
                         Ok(_) => {
-                            self.state.last_deleted = Some(task.clone());
-                            self.dispatch(Action::TaskOperationSucceeded {
-                                message: format!(
-                                    "task \"{}\" deleted (press u to undo)",
-                                    task.title
-                                ),
-                            });
+                            if task.status == TaskStatus::Discard {
+                                self.state.last_deleted = None;
+                                self.dispatch(Action::TaskOperationSucceeded {
+                                    message: format!("discarded task \"{}\" deleted", task.title),
+                                });
+                            } else {
+                                self.state.last_deleted = Some(task.clone());
+                                self.dispatch(Action::TaskOperationSucceeded {
+                                    message: format!(
+                                        "task \"{}\" deleted (press u to undo)",
+                                        task.title
+                                    ),
+                                });
+                            }
                             self.dispatch(Action::RefreshTasks);
                         }
                         Err(err) => self.dispatch(Action::TaskOperationFailed {
@@ -123,6 +137,12 @@ impl App {
             }
             Action::StartSelected => {
                 if let Some(task) = self.selected_task().cloned() {
+                    if task.status == TaskStatus::Discard {
+                        self.dispatch(Action::TaskOperationFailed {
+                            message: "start failed: discarded tasks are terminal".to_string(),
+                        });
+                        return;
+                    }
                     match self.service.start_task(&task.file_name) {
                         Ok(updated) => {
                             self.dispatch(Action::TaskOperationSucceeded {
@@ -138,6 +158,12 @@ impl App {
             }
             Action::DoneSelected => {
                 if let Some(task) = self.selected_task().cloned() {
+                    if task.status == TaskStatus::Discard {
+                        self.dispatch(Action::TaskOperationFailed {
+                            message: "done failed: discarded tasks are terminal".to_string(),
+                        });
+                        return;
+                    }
                     match self.service.done_task_without_learning(&task.file_name) {
                         Ok(updated) => {
                             self.dispatch(Action::TaskOperationSucceeded {
@@ -257,6 +283,7 @@ mod tests {
             file_name: format!("{title}.md"),
             status,
             task_type: TaskType::Task,
+            discard_note: None,
             details: String::new(),
             created_at: timestamp,
             updated_at: timestamp,

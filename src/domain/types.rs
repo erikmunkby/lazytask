@@ -90,6 +90,7 @@ pub struct Task {
     pub file_name: String,
     pub status: TaskStatus,
     pub task_type: TaskType,
+    pub discard_note: Option<String>,
     pub details: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,

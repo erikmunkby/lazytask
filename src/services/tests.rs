@@ -134,6 +134,105 @@ fn discard_task_moves_task_to_discard() {
 }
 
 #[test]
+fn discard_task_with_note_normalizes_and_validates_note() {
+    let temp = TempDir::new().unwrap();
+    let service = service_for_temp(&temp);
+    service.init().unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Document decision".to_string(),
+            task_type: TaskType::Task,
+            details: "details".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+
+    let discarded = service
+        .discard_task_with_note("document-decision", "line one\\nline two")
+        .unwrap();
+    assert_eq!(discarded.status, TaskStatus::Discard);
+    assert_eq!(
+        discarded.discard_note.as_deref(),
+        Some("line one\nline two")
+    );
+
+    let err = service
+        .discard_task_with_note("document-decision", "   ")
+        .unwrap_err();
+    assert!(matches!(err, ServiceError::ValidationError(_)));
+}
+
+#[test]
+fn create_ignores_discard_for_duplicate_check_but_done_still_blocks() {
+    let temp = TempDir::new().unwrap();
+    let service = service_for_temp(&temp);
+    service.init().unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Duplicate title".to_string(),
+            task_type: TaskType::Task,
+            details: "first".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+    service
+        .discard_task_with_note("duplicate-title", "wont do")
+        .unwrap();
+
+    let recreated = service
+        .create_task(CreateTaskInput {
+            title: "Duplicate title".to_string(),
+            task_type: TaskType::Task,
+            details: "second".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+    assert_eq!(recreated.status, TaskStatus::Todo);
+
+    service
+        .done_task_without_learning("duplicate-title")
+        .unwrap();
+    let err = service
+        .create_task(CreateTaskInput {
+            title: "Duplicate title".to_string(),
+            task_type: TaskType::Task,
+            details: "third".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap_err();
+    assert!(matches!(err, ServiceError::TaskAlreadyExists(_)));
+}
+
+#[test]
+fn get_tasks_ignores_discarded_matches() {
+    let temp = TempDir::new().unwrap();
+    let service = service_for_temp(&temp);
+    service.init().unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Query me".to_string(),
+            task_type: TaskType::Task,
+            details: "details".to_string(),
+            start: false,
+            require_details: true,
+        })
+        .unwrap();
+    service
+        .discard_task_with_note("query-me", "not now")
+        .unwrap();
+
+    let err = service.get_tasks(&["query me".to_string()]).unwrap_err();
+    assert!(matches!(err, ServiceError::TaskNotFound(_)));
+}
+
+#[test]
 fn edit_task_overwrites_selected_task() {
     let temp = TempDir::new().unwrap();
     let service = service_for_temp(&temp);

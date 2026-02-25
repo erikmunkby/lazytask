@@ -3,7 +3,7 @@ use super::{CreateTaskInput, ServiceError, TaskService};
 use crate::config;
 use crate::domain::{
     DomainError, Task, TaskStatus, normalize_escaped_newlines, normalize_file_name,
-    parse_learning_lines, validate_details, validate_title,
+    parse_learning_lines, validate_details, validate_discard_note, validate_title,
 };
 use chrono::Utc;
 
@@ -50,9 +50,10 @@ impl TaskService {
         self.enforce_status_limit(status)?;
 
         let file_name = normalize_file_name(&input.title).map_err(validation_error)?;
+        let blocking_statuses = [TaskStatus::Todo, TaskStatus::InProgress, TaskStatus::Done];
         if self
             .storage
-            .find_task_by_exact_file_name(&file_name)?
+            .find_task_by_exact_file_name_in_statuses(&file_name, &blocking_statuses)?
             .is_some()
         {
             return Err(ServiceError::TaskAlreadyExists(input.title));
@@ -71,8 +72,7 @@ impl TaskService {
     pub fn start_task(&self, query: &str) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
         self.enforce_status_limit(TaskStatus::InProgress)?;
-        let all = self.storage.list_tasks(None, None)?;
-        let task = resolve_query(&all, query)?;
+        let task = self.resolve_task(query)?;
         if task.status == TaskStatus::InProgress {
             return Ok(task);
         }
@@ -89,8 +89,7 @@ impl TaskService {
     ) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
         let learning_lines = parse_learning_lines(learning).map_err(validation_error)?;
-        let all = self.storage.list_tasks(None, None)?;
-        let task = resolve_query(&all, query)?;
+        let task = self.resolve_task(query)?;
 
         let now = Utc::now();
         let moved = self.storage.move_task(&task, TaskStatus::Done, now)?;
@@ -102,8 +101,7 @@ impl TaskService {
 
     pub fn done_task_without_learning(&self, query: &str) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
-        let all = self.storage.list_tasks(None, None)?;
-        let task = resolve_query(&all, query)?;
+        let task = self.resolve_task(query)?;
 
         Ok(self
             .storage
@@ -111,9 +109,26 @@ impl TaskService {
     }
 
     pub fn discard_task(&self, query: &str) -> Result<Task, ServiceError> {
+        self.discard_task_internal(query, None)
+    }
+
+    pub fn discard_task_with_note(
+        &self,
+        query: &str,
+        discard_note: &str,
+    ) -> Result<Task, ServiceError> {
+        let discard_note = validate_discard_note(discard_note).map_err(validation_error)?;
+        self.discard_task_internal(query, Some(discard_note))
+    }
+
+    fn discard_task_internal(
+        &self,
+        query: &str,
+        discard_note: Option<String>,
+    ) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
-        let all = self.storage.list_tasks(None, None)?;
-        let task = resolve_query(&all, query)?;
+        let mut task = self.resolve_task(query)?;
+        task.discard_note = discard_note;
 
         Ok(self
             .storage
@@ -122,18 +137,25 @@ impl TaskService {
 
     pub fn delete_task(&self, query: &str) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
-        let all = self.storage.list_tasks(None, None)?;
-        let task = resolve_query(&all, query)?;
+        let task = self.resolve_task(query)?;
 
         self.storage.delete_task(&task)?;
         Ok(task)
     }
 
+    pub fn delete_task_exact(&self, task: &Task) -> Result<Task, ServiceError> {
+        self.storage.require_layout()?;
+        self.storage.delete_task(task)?;
+        Ok(task.clone())
+    }
+
     pub fn restore_task(&self, task: &Task) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
+        let blocking_statuses = [TaskStatus::Todo, TaskStatus::InProgress, TaskStatus::Done];
+
         if self
             .storage
-            .find_task_by_exact_file_name(&task.file_name)?
+            .find_task_by_exact_file_name_in_statuses(&task.file_name, &blocking_statuses)?
             .is_some()
         {
             return Err(ServiceError::TaskAlreadyExists(task.title.clone()));
@@ -155,13 +177,18 @@ impl TaskService {
         validate_title(&title).map_err(validation_error)?;
         validate_details(&normalized_details, false).map_err(validation_error)?;
 
-        let all = self.storage.list_tasks(None, None)?;
-        let mut task = resolve_query(&all, query)?;
+        let mut task = self.resolve_task(query)?;
         task.title = title.trim().to_string();
         task.task_type = task_type;
+        task.discard_note = None;
         task.details = normalized_details.trim_end().to_string();
         task.updated_at = Utc::now();
         Ok(self.storage.update_task(&task)?)
+    }
+
+    fn resolve_task(&self, query: &str) -> Result<Task, ServiceError> {
+        let all = self.storage.list_tasks(None, None)?;
+        resolve_query(&all, query)
     }
 
     fn enforce_status_limit(&self, status: TaskStatus) -> Result<(), ServiceError> {

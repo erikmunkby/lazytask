@@ -172,6 +172,7 @@ mod tests {
             file_name: format!("{title}.md"),
             status,
             task_type: TaskType::Task,
+            discard_note: None,
             details: String::new(),
             created_at: now,
             updated_at: now,

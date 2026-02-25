@@ -70,6 +70,53 @@ fn list_tasks_can_filter_by_type() {
 }
 
 #[test]
+fn round_trip_discard_note_in_markdown() {
+    let temp = TempDir::new().unwrap();
+    let storage = storage_for_temp(&temp);
+    storage.ensure_layout().unwrap();
+    let now = Utc.with_ymd_and_hms(2026, 2, 21, 15, 0, 0).unwrap();
+
+    let mut task = storage
+        .create_task("Discard me", TaskStatus::Todo, TaskType::Task, "Do it", now)
+        .unwrap();
+    task.discard_note = Some("line one\nline two".to_string());
+    storage.move_task(&task, TaskStatus::Discard, now).unwrap();
+
+    let content = fs::read_to_string(temp.path().join(".tasks/discard/discard-me.md")).unwrap();
+    assert!(content.contains("discard-note:"));
+    assert!(content.contains("  line one"));
+    assert!(content.contains("  line two"));
+
+    let parsed = storage
+        .list_tasks(Some(TaskStatus::Discard), None)
+        .unwrap()
+        .pop()
+        .unwrap();
+    assert_eq!(parsed.discard_note.as_deref(), Some("line one\nline two"));
+}
+
+#[test]
+fn parse_task_without_discard_note_stays_compatible() {
+    let temp = TempDir::new().unwrap();
+    let storage = storage_for_temp(&temp);
+    storage.ensure_layout().unwrap();
+
+    let path = temp.path().join(".tasks/todo/no-note.md");
+    fs::write(
+        path,
+        "# No note\nstatus: todo\ntype: task\ncreated: 2026-02-21T15:00:00Z\nupdated: 2026-02-21T15:00:00Z\ndetails:\n  text\n",
+    )
+    .unwrap();
+
+    let task = storage
+        .list_tasks(Some(TaskStatus::Todo), None)
+        .unwrap()
+        .pop()
+        .unwrap();
+    assert!(task.discard_note.is_none());
+}
+
+#[test]
 fn init_prompt_uses_agents_file_by_default() {
     let temp = TempDir::new().unwrap();
     let storage = storage_for_temp(&temp);
@@ -80,7 +127,7 @@ fn init_prompt_uses_agents_file_by_default() {
     let content = fs::read_to_string(temp.path().join(storage.layout.agents_file)).unwrap();
     assert!(content.contains(prompts.important_block_start));
     assert!(content.contains("lt list [--type task|bug] [--show-done]"));
-    assert!(content.contains("lt discard \"<title>\""));
+    assert!(content.contains("lt discard \"<title>\" --discard-note \"<note>\""));
 }
 
 #[test]

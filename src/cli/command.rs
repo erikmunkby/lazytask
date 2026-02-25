@@ -42,6 +42,8 @@ pub(super) enum Commands {
     },
     Discard {
         query: String,
+        #[arg(long, allow_hyphen_values = true)]
+        discard_note: String,
     },
     Delete {
         query: String,
@@ -57,6 +59,8 @@ pub(super) struct TaskData {
     pub title: String,
     pub status: String,
     pub task_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub discard_note: Option<String>,
     pub details: String,
     pub updated: String,
 }

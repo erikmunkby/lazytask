@@ -421,13 +421,14 @@ fn ai_discard_moves_to_discard_bucket_and_hides_from_list() {
 
     let output = lt_command()
         .current_dir(temp.path())
-        .args(["discard", "Ship rust"])
+        .args(["discard", "Ship rust", "--discard-note", "out of scope"])
         .output()
         .unwrap();
 
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
     assert_eq!(payload["data"]["task"]["status"], "discard");
+    assert_eq!(payload["data"]["task"]["discard_note"], "out of scope");
     assert!(temp.path().join(".tasks/discard/ship-rust.md").exists());
 
     let list = lt_command()
@@ -437,6 +438,169 @@ fn ai_discard_moves_to_discard_bucket_and_hides_from_list() {
         .unwrap();
     let list_payload = parse_json(&list.stdout);
     assert_eq!(list_payload["data"]["tasks"].as_array().unwrap().len(), 0);
+}
+
+#[test]
+fn ai_discard_requires_note() {
+    let temp = init_temp();
+    create_task(&temp, "Ship rust");
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .args(["discard", "Ship rust"])
+        .output()
+        .unwrap();
+
+    let payload = parse_json(&output.stdout);
+    assert!(!output.status.success());
+    assert_eq!(payload["error"]["code"], "invalid_arguments");
+}
+
+#[test]
+fn ai_discard_create_same_title_succeeds() {
+    let temp = init_temp();
+    create_task(&temp, "Ship rust");
+
+    let discard = lt_command()
+        .current_dir(temp.path())
+        .args(["discard", "Ship rust", "--discard-note", "not needed"])
+        .output()
+        .unwrap();
+    assert!(discard.status.success());
+
+    let recreate = lt_command()
+        .current_dir(temp.path())
+        .args([
+            "create",
+            "--title",
+            "Ship rust",
+            "--type",
+            "task",
+            "--details",
+            "new work",
+        ])
+        .output()
+        .unwrap();
+    let recreate_payload = parse_json(&recreate.stdout);
+
+    assert!(recreate.status.success());
+    assert_eq!(recreate_payload["data"]["task"]["status"], "todo");
+}
+
+#[test]
+fn ai_queries_ignore_discarded_duplicate() {
+    let temp = init_temp();
+    create_task(&temp, "Ship rust");
+
+    lt_command()
+        .current_dir(temp.path())
+        .args(["discard", "Ship rust", "--discard-note", "done elsewhere"])
+        .output()
+        .unwrap();
+
+    lt_command()
+        .current_dir(temp.path())
+        .args([
+            "create",
+            "--title",
+            "Ship rust",
+            "--type",
+            "task",
+            "--details",
+            "fresh",
+        ])
+        .output()
+        .unwrap();
+
+    let get = lt_command()
+        .current_dir(temp.path())
+        .args(["get", "Ship rust"])
+        .output()
+        .unwrap();
+    let get_payload = parse_json(&get.stdout);
+    assert!(get.status.success());
+    assert_eq!(get_payload["data"]["tasks"][0]["status"], "todo");
+
+    let start = lt_command()
+        .current_dir(temp.path())
+        .args(["start", "Ship rust"])
+        .output()
+        .unwrap();
+    let start_payload = parse_json(&start.stdout);
+    assert!(start.status.success());
+    assert_eq!(start_payload["data"]["task"]["status"], "in-progress");
+
+    let done = lt_command()
+        .current_dir(temp.path())
+        .args(["done", "Ship rust", "--learning", "learned"])
+        .output()
+        .unwrap();
+    let done_payload = parse_json(&done.stdout);
+    assert!(done.status.success());
+    assert_eq!(done_payload["data"]["task"]["status"], "done");
+}
+
+#[test]
+fn ai_querying_only_discarded_task_returns_not_found() {
+    let temp = init_temp();
+    create_task(&temp, "Ship rust");
+
+    lt_command()
+        .current_dir(temp.path())
+        .args(["discard", "Ship rust", "--discard-note", "obsolete"])
+        .output()
+        .unwrap();
+
+    let get = lt_command()
+        .current_dir(temp.path())
+        .args(["get", "Ship rust"])
+        .output()
+        .unwrap();
+    let get_payload = parse_json(&get.stdout);
+    assert!(!get.status.success());
+    assert_eq!(get_payload["error"]["code"], "task_not_found");
+}
+
+#[test]
+fn ai_discard_note_validates_length_and_allows_multiline() {
+    let temp = init_temp();
+    create_task(&temp, "Ship rust");
+
+    let empty = lt_command()
+        .current_dir(temp.path())
+        .args(["discard", "Ship rust", "--discard-note", "   "])
+        .output()
+        .unwrap();
+    let empty_payload = parse_json(&empty.stdout);
+    assert!(!empty.status.success());
+    assert_eq!(empty_payload["error"]["code"], "validation_error");
+
+    let too_long_note = "x".repeat(121);
+    let too_long = lt_command()
+        .current_dir(temp.path())
+        .args(["discard", "Ship rust", "--discard-note", &too_long_note])
+        .output()
+        .unwrap();
+    let too_long_payload = parse_json(&too_long.stdout);
+    assert!(!too_long.status.success());
+    assert_eq!(too_long_payload["error"]["code"], "validation_error");
+
+    let ok = lt_command()
+        .current_dir(temp.path())
+        .args([
+            "discard",
+            "Ship rust",
+            "--discard-note",
+            "line one\\nline two",
+        ])
+        .output()
+        .unwrap();
+    let ok_payload = parse_json(&ok.stdout);
+    assert!(ok.status.success());
+    assert_eq!(
+        ok_payload["data"]["task"]["discard_note"],
+        "line one\nline two"
+    );
 }
 
 #[test]
