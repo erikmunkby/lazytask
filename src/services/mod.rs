@@ -2,6 +2,7 @@ mod editor;
 mod errors;
 mod learning;
 mod query;
+mod retention;
 mod tasks;
 
 use crate::config::AppConfig;

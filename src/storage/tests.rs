@@ -1,6 +1,6 @@
 use super::*;
 use crate::config::load_for_workspace_root;
-use crate::domain::TaskType;
+use crate::domain::{TaskStatus, TaskType};
 use chrono::{TimeZone, Utc};
 use std::fs;
 use tempfile::TempDir;
@@ -109,4 +109,76 @@ fn init_prompt_append_is_idempotent() {
     let content = fs::read_to_string(temp.path().join(storage.layout.agents_file)).unwrap();
     let count = content.matches(prompts.important_block_start).count();
     assert_eq!(count, 1);
+}
+
+#[test]
+fn delete_terminal_tasks_updated_before_removes_only_expired_done_and_discard() {
+    let temp = TempDir::new().unwrap();
+    let storage = storage_for_temp(&temp);
+    storage.ensure_layout().unwrap();
+
+    let old = Utc.with_ymd_and_hms(2020, 1, 1, 12, 0, 0).unwrap();
+    let recent = Utc.with_ymd_and_hms(2026, 2, 21, 12, 0, 0).unwrap();
+    let cutoff = Utc.with_ymd_and_hms(2026, 2, 1, 0, 0, 0).unwrap();
+
+    storage
+        .create_task("done old", TaskStatus::Done, TaskType::Task, "old", old)
+        .unwrap();
+    storage
+        .create_task(
+            "discard old",
+            TaskStatus::Discard,
+            TaskType::Task,
+            "old",
+            old,
+        )
+        .unwrap();
+    storage
+        .create_task(
+            "done recent",
+            TaskStatus::Done,
+            TaskType::Task,
+            "recent",
+            recent,
+        )
+        .unwrap();
+    storage
+        .create_task("todo old", TaskStatus::Todo, TaskType::Task, "old", old)
+        .unwrap();
+    storage
+        .create_task(
+            "in progress old",
+            TaskStatus::InProgress,
+            TaskType::Task,
+            "old",
+            old,
+        )
+        .unwrap();
+
+    let deleted = storage
+        .delete_terminal_tasks_updated_before(cutoff)
+        .unwrap();
+    assert_eq!(deleted, 2);
+
+    assert!(!temp.path().join(".tasks/done/done-old.md").exists());
+    assert!(!temp.path().join(".tasks/discard/discard-old.md").exists());
+    assert!(temp.path().join(".tasks/done/done-recent.md").exists());
+    assert!(temp.path().join(".tasks/todo/todo-old.md").exists());
+    assert!(
+        temp.path()
+            .join(".tasks/in-progress/in-progress-old.md")
+            .exists()
+    );
+}
+
+#[test]
+fn delete_terminal_tasks_updated_before_is_noop_when_tasks_root_missing() {
+    let temp = TempDir::new().unwrap();
+    let storage = storage_for_temp(&temp);
+    let cutoff = Utc.with_ymd_and_hms(2026, 2, 1, 0, 0, 0).unwrap();
+
+    let deleted = storage
+        .delete_terminal_tasks_updated_before(cutoff)
+        .unwrap();
+    assert_eq!(deleted, 0);
 }

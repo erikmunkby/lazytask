@@ -14,6 +14,11 @@ pub struct HintsConfig {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RetentionConfig {
+    pub done_discard_ttl_days: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StorageLayoutConfig {
     pub tasks_dir: &'static str,
     pub todo_dir: &'static str,
@@ -30,6 +35,7 @@ pub struct AppConfig {
     pub workspace_root: PathBuf,
     pub limits: LimitsConfig,
     pub hints: HintsConfig,
+    pub retention: RetentionConfig,
     pub storage_layout: StorageLayoutConfig,
     pub prompts: PromptConfig,
     pub(crate) config_file_name: &'static str,
@@ -52,21 +58,12 @@ pub enum ConfigError {
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct InternalConfig {
     pub config_file_name: &'static str,
-    pub default_limits: LimitsConfig,
-    pub default_hints: HintsConfig,
     pub storage_layout: StorageLayoutConfig,
     pub prompts: PromptConfig,
 }
 
 pub(crate) const INTERNAL_CONFIG: InternalConfig = InternalConfig {
     config_file_name: "lazytask.toml",
-    default_limits: LimitsConfig {
-        todo: 20,
-        in_progress: 3,
-    },
-    default_hints: HintsConfig {
-        learn_threshold: 35,
-    },
     storage_layout: StorageLayoutConfig {
         tasks_dir: ".tasks",
         todo_dir: "todo",
