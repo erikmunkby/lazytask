@@ -4,6 +4,7 @@ use crate::tui::actions::Action;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 impl App {
+    /// Routes a key event to the active mode-specific handler.
     pub fn on_key(&mut self, key: KeyEvent) {
         let mode = self.state.mode.clone();
         match mode {
@@ -13,6 +14,7 @@ impl App {
         }
     }
 
+    /// Handles keybindings used in the main task-list mode.
     fn on_key_normal(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Up => self.dispatch(Action::MoveSelectionUp),
@@ -30,6 +32,7 @@ impl App {
         }
     }
 
+    /// Handles keybindings overlay dismissal keys.
     fn on_key_keybindings(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Esc | KeyCode::Enter | KeyCode::Char('?') | KeyCode::Char('q') => {
@@ -39,6 +42,7 @@ impl App {
         }
     }
 
+    /// Handles create/edit modal text editing, navigation, and submit shortcuts.
     fn on_key_creating(&mut self, key: KeyEvent, mut create: CreateState) {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
 

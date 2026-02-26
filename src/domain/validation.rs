@@ -1,5 +1,6 @@
 use super::{DomainError, TITLE_CHAR_LIMIT, normalize_escaped_newlines, normalize_file_name};
 
+/// Validates task titles for required content, length, and file-name compatibility.
 pub fn validate_title(title: &str) -> Result<(), DomainError> {
     if title.trim().is_empty() {
         return Err(DomainError::ValidationError(
@@ -22,6 +23,9 @@ pub fn validate_title(title: &str) -> Result<(), DomainError> {
     Ok(())
 }
 
+/// Validates task details according to command-level requirements.
+///
+/// Some flows require details at creation time while others allow blank details.
 pub fn validate_details(details: &str, required: bool) -> Result<(), DomainError> {
     if required && details.trim().is_empty() {
         return Err(DomainError::ValidationError(
@@ -32,6 +36,9 @@ pub fn validate_details(details: &str, required: bool) -> Result<(), DomainError
     Ok(())
 }
 
+/// Normalizes and validates discard notes to a compact single-field payload.
+///
+/// Returns the trimmed note so callers can store it directly without additional cleanup.
 pub fn validate_discard_note(discard_note: &str) -> Result<String, DomainError> {
     let normalized = normalize_escaped_newlines(discard_note);
     let trimmed = normalized.trim();

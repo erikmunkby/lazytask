@@ -4,6 +4,7 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 
+/// Renders the centered keybindings help overlay.
 pub(super) fn render_keybindings_overlay(frame: &mut Frame, main_area: Rect) {
     let area = centered_rect(46, 66, main_area);
     frame.render_widget(Clear, area);
@@ -19,6 +20,7 @@ pub(super) fn render_keybindings_overlay(frame: &mut Frame, main_area: Rect) {
     frame.render_widget(overlay, area);
 }
 
+/// Defines ordered keybinding lines shown in the help overlay.
 fn keybinding_lines() -> Vec<&'static str> {
     vec![
         "Nav: \u{2191}/\u{2193}",

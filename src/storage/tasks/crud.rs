@@ -4,6 +4,9 @@ use chrono::{DateTime, Utc};
 use std::fs;
 
 impl Storage {
+    /// Lists tasks from one status bucket or all buckets, optionally filtered by type.
+    ///
+    /// Results are sorted newest-first by `updated_at`, then by title.
     pub fn list_tasks(
         &self,
         status: Option<TaskStatus>,
@@ -32,6 +35,7 @@ impl Storage {
         Ok(tasks)
     }
 
+    /// Finds a task by exact normalized file name across all status buckets.
     pub fn find_task_by_exact_file_name(
         &self,
         file_name: &str,
@@ -47,6 +51,7 @@ impl Storage {
         )
     }
 
+    /// Finds a task by exact file name restricted to a caller-supplied status set.
     pub fn find_task_by_exact_file_name_in_statuses(
         &self,
         file_name: &str,
@@ -62,6 +67,7 @@ impl Storage {
         Ok(None)
     }
 
+    /// Writes a task markdown file to its current status bucket.
     pub fn write_task(&self, task: &Task) -> Result<(), StorageError> {
         let path = self
             .bucket_path(task.status)
@@ -72,6 +78,7 @@ impl Storage {
         Ok(())
     }
 
+    /// Creates and persists a new task record with caller-supplied timestamp values.
     pub fn create_task(
         &self,
         title: &str,
@@ -98,6 +105,7 @@ impl Storage {
         Ok(task)
     }
 
+    /// Rewrites an existing task file with updated task content.
     pub fn update_task(&self, task: &Task) -> Result<Task, StorageError> {
         fs::create_dir_all(self.bucket_path(task.status))?;
         let content = self.render_task_markdown(task);
@@ -105,6 +113,9 @@ impl Storage {
         Ok(task.clone())
     }
 
+    /// Moves a task to a new status bucket and updates its `updated_at` timestamp.
+    ///
+    /// Discard notes are cleared automatically when moving out of the discard bucket.
     pub fn move_task(
         &self,
         task: &Task,
@@ -127,6 +138,7 @@ impl Storage {
         self.update_task(&updated)
     }
 
+    /// Deletes a task markdown file if it exists.
     pub fn delete_task(&self, task: &Task) -> Result<(), StorageError> {
         let path = self.task_path(task);
         if path.exists() {
@@ -135,6 +147,7 @@ impl Storage {
         Ok(())
     }
 
+    /// Reads raw markdown content for a task file.
     pub fn read_task_content(&self, task: &Task) -> Result<String, StorageError> {
         Ok(fs::read_to_string(self.task_path(task))?)
     }

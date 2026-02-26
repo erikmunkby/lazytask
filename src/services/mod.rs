@@ -40,6 +40,7 @@ pub struct TaskService {
 }
 
 impl TaskService {
+    /// Builds a service facade with storage bound to the provided app config.
     pub fn new(config: AppConfig) -> Self {
         Self {
             storage: Storage::from_app_config(&config),

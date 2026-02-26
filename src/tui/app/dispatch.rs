@@ -5,6 +5,7 @@ use crate::tui::actions::Action;
 use chrono::Local;
 
 impl App {
+    /// Applies one UI action and mutates state plus persisted tasks as needed.
     pub fn dispatch(&mut self, action: Action) {
         match action {
             Action::RefreshTasks => match self.service.list_tasks(None, None) {
@@ -195,10 +196,12 @@ impl App {
         }
     }
 
+    /// Returns the currently highlighted task, if any.
     fn selected_task(&self) -> Option<&Task> {
         self.state.tasks.get(self.state.selected_index)
     }
 
+    /// Refreshes the right-hand preview with raw markdown for the selected task.
     fn refresh_preview(&mut self) {
         if let Some(task) = self.selected_task() {
             self.state.preview_text = match self.service.read_task_content(task) {
@@ -210,6 +213,7 @@ impl App {
         }
     }
 
+    /// Appends a log entry while enforcing fixed panel capacity.
     pub(super) fn push_log(&mut self, message: String, is_error: bool) {
         self.state.log_entries.push_back(LogEntry {
             time: Local::now().format("%H:%M:%S").to_string(),
@@ -223,6 +227,7 @@ impl App {
     }
 }
 
+/// Sorts tasks for TUI grouping: in-progress, todo, done, then discard.
 fn sort_tasks_for_tui(tasks: &mut [Task]) {
     tasks.sort_by(|a, b| {
         status_group_rank(a.status)
@@ -231,6 +236,7 @@ fn sort_tasks_for_tui(tasks: &mut [Task]) {
     });
 }
 
+/// Provides status group ordering rank used by TUI sorting.
 fn status_group_rank(status: TaskStatus) -> u8 {
     match status {
         TaskStatus::InProgress => 0,

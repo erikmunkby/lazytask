@@ -9,6 +9,7 @@ use command::Cli;
 use json_output::{print_json_error, wants_ai_json_error};
 use serde_json::json;
 
+/// Parses CLI arguments and dispatches either human-facing output or AI JSON errors.
 pub fn run() -> Result<()> {
     match Cli::try_parse() {
         Ok(cli) => parsed::run_parsed(cli),

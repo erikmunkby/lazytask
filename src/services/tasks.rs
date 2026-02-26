@@ -8,6 +8,10 @@ use crate::domain::{
 use chrono::Utc;
 
 impl TaskService {
+    /// Bootstraps workspace state needed before any task command can succeed.
+    ///
+    /// This ensures a default `lazytask.toml` exists, creates the `.tasks` layout,
+    /// and appends agent guidance to the configured prompt file when missing.
     pub fn init(&self) -> Result<(), ServiceError> {
         config::ensure_default_file(&self.config)?;
         self.storage.ensure_layout()?;
@@ -15,6 +19,7 @@ impl TaskService {
         Ok(())
     }
 
+    /// Lists tasks with optional status/type filtering.
     pub fn list_tasks(
         &self,
         status: Option<TaskStatus>,
@@ -23,6 +28,7 @@ impl TaskService {
         Ok(self.storage.list_tasks(status, task_type)?)
     }
 
+    /// Resolves each query against current tasks and returns matched tasks in input order.
     pub fn get_tasks(&self, queries: &[String]) -> Result<Vec<Task>, ServiceError> {
         self.storage.require_layout()?;
         let all = self.storage.list_tasks(None, None)?;
@@ -35,6 +41,11 @@ impl TaskService {
         Ok(out)
     }
 
+    /// Creates a new task after validation, normalization, and status-limit checks.
+    ///
+    /// `input.start` determines whether the task starts in `in-progress` or `todo`.
+    /// Duplicate detection blocks titles that already exist in normal flow buckets
+    /// (`todo`, `in-progress`, `done`) while allowing recreation of discarded tasks.
     pub fn create_task(&self, input: CreateTaskInput) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
         let normalized_details = normalize_escaped_newlines(&input.details);
@@ -69,6 +80,9 @@ impl TaskService {
         )?)
     }
 
+    /// Moves a task into `in-progress`, enforcing active WIP limits.
+    ///
+    /// If the task is already in progress this is a no-op.
     pub fn start_task(&self, query: &str) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
         self.enforce_status_limit(TaskStatus::InProgress)?;
@@ -82,6 +96,11 @@ impl TaskService {
             .move_task(&task, TaskStatus::InProgress, Utc::now())?)
     }
 
+    /// Marks a task done and records one or more learning lines in `learnings.md`.
+    ///
+    /// Learnings are validated before state changes so malformed input never moves
+    /// the task. On success the task is moved first, then the learning entry is
+    /// appended using the same completion timestamp.
     pub fn done_task_with_learning(
         &self,
         query: &str,
@@ -99,6 +118,7 @@ impl TaskService {
         Ok(moved)
     }
 
+    /// Marks a task as done without recording learnings.
     pub fn done_task_without_learning(&self, query: &str) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
         let task = self.resolve_task(query)?;
@@ -108,10 +128,12 @@ impl TaskService {
             .move_task(&task, TaskStatus::Done, Utc::now())?)
     }
 
+    /// Moves a task to the discard bucket without attaching a note.
     pub fn discard_task(&self, query: &str) -> Result<Task, ServiceError> {
         self.discard_task_internal(query, None)
     }
 
+    /// Moves a task to discard and persists a validated discard note.
     pub fn discard_task_with_note(
         &self,
         query: &str,
@@ -121,6 +143,7 @@ impl TaskService {
         self.discard_task_internal(query, Some(discard_note))
     }
 
+    /// Shared discard implementation used by note/no-note command variants.
     fn discard_task_internal(
         &self,
         query: &str,
@@ -135,6 +158,7 @@ impl TaskService {
             .move_task(&task, TaskStatus::Discard, Utc::now())?)
     }
 
+    /// Deletes a resolved task file from its current bucket.
     pub fn delete_task(&self, query: &str) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
         let task = self.resolve_task(query)?;
@@ -143,12 +167,14 @@ impl TaskService {
         Ok(task)
     }
 
+    /// Deletes a task by exact identity without query resolution.
     pub fn delete_task_exact(&self, task: &Task) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
         self.storage.delete_task(task)?;
         Ok(task.clone())
     }
 
+    /// Restores a previously deleted task if no active-flow filename conflict exists.
     pub fn restore_task(&self, task: &Task) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
         let blocking_statuses = [TaskStatus::Todo, TaskStatus::InProgress, TaskStatus::Done];
@@ -165,6 +191,10 @@ impl TaskService {
         Ok(self.storage.write_task(task).map(|_| task.clone())?)
     }
 
+    /// Overwrites title/type/details of the resolved task in place.
+    ///
+    /// Editing always clears any discard note so moving a previously discarded task
+    /// back into active flow does not keep stale "won't do" context.
     pub fn edit_task(
         &self,
         query: &str,
@@ -186,11 +216,13 @@ impl TaskService {
         Ok(self.storage.update_task(&task)?)
     }
 
+    /// Resolves a user query against all visible tasks.
     fn resolve_task(&self, query: &str) -> Result<Task, ServiceError> {
         let all = self.storage.list_tasks(None, None)?;
         resolve_query(&all, query)
     }
 
+    /// Enforces configured WIP limits for todo and in-progress buckets.
     fn enforce_status_limit(&self, status: TaskStatus) -> Result<(), ServiceError> {
         let limits = self.config.limits;
         let current = self.storage.list_tasks(Some(status), None)?.len();
@@ -209,6 +241,7 @@ impl TaskService {
     }
 }
 
+/// Converts domain validation failures into service-layer validation errors.
 fn validation_error(err: DomainError) -> ServiceError {
     match err {
         DomainError::ValidationError(msg) => ServiceError::ValidationError(msg),

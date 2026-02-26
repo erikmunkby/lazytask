@@ -3,6 +3,10 @@ use crate::config::markdown_for_key;
 use std::fs;
 
 impl Storage {
+    /// Ensures agent usage guidance is present in `AGENTS.md` or `CLAUDE.md`.
+    ///
+    /// If both files are missing, this creates `AGENTS.md` and appends the
+    /// configured prompt block exactly once.
     pub fn ensure_agent_prompt_guidance(&self) -> Result<(), StorageError> {
         let agents_path = self.workspace_root.join(self.layout.agents_file);
         let claude_path = self.workspace_root.join(self.layout.claude_file);
@@ -46,6 +50,7 @@ impl Storage {
     }
 }
 
+/// Detects whether an existing important block already contains lazytask guidance.
 pub(crate) fn has_lazytask_important_block(
     content: &str,
     prompts: crate::config::PromptConfig,

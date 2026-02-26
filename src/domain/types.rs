@@ -16,6 +16,7 @@ pub enum TaskStatus {
 }
 
 impl TaskStatus {
+    /// Returns the canonical storage/CLI string for this status.
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Todo => "todo",
@@ -56,6 +57,7 @@ pub enum TaskType {
 }
 
 impl TaskType {
+    /// Returns the canonical storage/CLI string for this task kind.
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Task => "task",

@@ -23,6 +23,7 @@ struct ErrorBody {
     details: Value,
 }
 
+/// Maps service-layer errors to stable machine-readable JSON error codes.
 pub(super) fn map_error_code(err: &ServiceError) -> (String, Value) {
     match err {
         ServiceError::TasksRootMissing => ("tasks_root_missing".to_string(), json!({})),
@@ -50,6 +51,7 @@ pub(super) fn map_error_code(err: &ServiceError) -> (String, Value) {
     }
 }
 
+/// Detects whether parse failures should be emitted as AI JSON envelopes.
 pub(super) fn wants_ai_json_error() -> bool {
     let first_arg = std::env::args().nth(1);
     matches!(
@@ -65,6 +67,7 @@ pub(super) fn wants_ai_json_error() -> bool {
     )
 }
 
+/// Prints a standard success envelope as one-line JSON.
 pub(super) fn print_json_success(data: Value, hint: Option<String>) {
     let payload = SuccessEnvelope {
         ok: true,
@@ -77,6 +80,7 @@ pub(super) fn print_json_success(data: Value, hint: Option<String>) {
     );
 }
 
+/// Prints a standard error envelope as one-line JSON.
 pub(super) fn print_json_error(code: &str, message: &str, details: Value) {
     let payload = ErrorEnvelope {
         ok: false,

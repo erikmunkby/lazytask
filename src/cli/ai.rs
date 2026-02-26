@@ -4,6 +4,7 @@ use crate::domain::{Task, TaskStatus, format_relative};
 use crate::services::{CreateTaskInput, ServiceError, TaskService};
 use serde_json::{Value, json};
 
+/// Runs one AI-facing command and returns JSON-ready payload plus optional hint text.
 pub(super) fn run_ai_command(
     service: &TaskService,
     config: &AppConfig,
@@ -99,6 +100,7 @@ pub(super) fn run_ai_command(
     }
 }
 
+/// Returns a learn-threshold hint when pending learnings exceed configured limits.
 fn learnings_hint(service: &TaskService, config: &AppConfig) -> Option<String> {
     let count = service.learnings_line_count().unwrap_or(0);
     if count > config.hints.learn_threshold {
@@ -110,11 +112,13 @@ fn learnings_hint(service: &TaskService, config: &AppConfig) -> Option<String> {
     }
 }
 
+/// Resolves prompt markdown by key as a service-level parse error on misses.
 fn prompt_by_key(key: &str) -> Result<&'static str, ServiceError> {
     markdown_for_key(key)
         .ok_or_else(|| ServiceError::ParseError(format!("unknown prompt key: {key}")))
 }
 
+/// Converts a domain task into the API response shape used by JSON envelopes.
 fn to_task_data(task: &Task, now: chrono::DateTime<chrono::Utc>) -> TaskData {
     TaskData {
         title: task.title.clone(),

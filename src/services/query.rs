@@ -1,6 +1,9 @@
 use super::ServiceError;
 use crate::domain::{Task, TaskStatus};
 
+/// Resolves a user query to one non-discard task using exact-first matching.
+///
+/// Exact title/file-name matches outrank fuzzy contains matches.
 pub(super) fn resolve_query(tasks: &[Task], query: &str) -> Result<Task, ServiceError> {
     let needle = query.trim().to_lowercase();
     if needle.is_empty() {

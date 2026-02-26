@@ -42,6 +42,7 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
+    /// Returns the absolute path to `lazytask.toml` for this workspace.
     pub fn config_path(&self) -> PathBuf {
         self.workspace_root.join(self.config_file_name)
     }

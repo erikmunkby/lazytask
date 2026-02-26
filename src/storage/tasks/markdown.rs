@@ -12,6 +12,7 @@ enum Section {
 }
 
 impl Storage {
+    /// Collects parsed task files from one bucket into an output vector.
     pub(super) fn collect_bucket_tasks(
         &self,
         status: TaskStatus,
@@ -42,6 +43,10 @@ impl Storage {
         Ok(())
     }
 
+    /// Parses a task markdown file into a `Task`.
+    ///
+    /// Missing/invalid metadata fields are tolerated with sensible fallbacks to keep
+    /// older or hand-edited files readable.
     pub fn parse_task_file(
         &self,
         path: &Path,
@@ -147,6 +152,7 @@ impl Storage {
         })
     }
 
+    /// Renders a task into the canonical markdown storage format.
     pub(super) fn render_task_markdown(&self, task: &Task) -> String {
         let mut out = String::new();
         out.push_str(&format!("# {}\n", task.title));
@@ -168,6 +174,7 @@ impl Storage {
     }
 }
 
+/// Normalizes one indented section line while preserving intentionally blank lines.
 fn push_section_line(line: &str, into: &mut Vec<String>) {
     if let Some(section_line) = line.strip_prefix("  ") {
         into.push(section_line.to_string());

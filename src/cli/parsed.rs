@@ -6,6 +6,7 @@ use crate::services::{ServiceError, TaskService};
 use anyhow::Result;
 use std::io::IsTerminal;
 
+/// Executes a parsed CLI command, routing to TUI or strict JSON command handling.
 pub(super) fn run_parsed(cli: Cli) -> Result<()> {
     match cli.command {
         None => {
@@ -68,6 +69,7 @@ struct Runtime {
     config: AppConfig,
 }
 
+/// Loads config/service runtime and performs startup retention cleanup.
 fn load_runtime() -> Result<Runtime, ServiceError> {
     let app_config = config::load_from_current_dir()?;
     let service = TaskService::new(app_config.clone());

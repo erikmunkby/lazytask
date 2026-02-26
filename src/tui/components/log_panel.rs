@@ -5,6 +5,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use std::collections::VecDeque;
 
+/// Renders the bottom-right log panel with timestamped success/error coloring.
 pub fn render(frame: &mut Frame, area: ratatui::layout::Rect, logs: &VecDeque<LogEntry>) {
     let lines = logs
         .iter()

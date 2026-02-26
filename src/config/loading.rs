@@ -32,11 +32,15 @@ struct UserRetentionConfig {
     done_discard_ttl_days: Option<usize>,
 }
 
+/// Loads app config by resolving the workspace root from the current directory.
 pub fn load_from_current_dir() -> Result<AppConfig, ConfigError> {
     let current = std::env::current_dir()?;
     load_for_workspace_root(find_workspace_root(&current))
 }
 
+/// Loads effective config for a known workspace root.
+///
+/// User overrides are merged onto internal defaults and validated against schema minima.
 pub fn load_for_workspace_root(workspace_root: impl AsRef<Path>) -> Result<AppConfig, ConfigError> {
     let workspace_root = workspace_root.as_ref().to_path_buf();
     let config_path = workspace_root.join(INTERNAL_CONFIG.config_file_name);
@@ -89,6 +93,9 @@ pub fn load_for_workspace_root(workspace_root: impl AsRef<Path>) -> Result<AppCo
     })
 }
 
+/// Ensures `lazytask.toml` exists and contains all currently supported keys.
+///
+/// Existing values are preserved; only missing sections/keys are backfilled.
 pub fn ensure_default_file(config: &AppConfig) -> Result<(), ConfigError> {
     let path = config.config_path();
     if !path.exists() {
@@ -103,6 +110,9 @@ pub fn ensure_default_file(config: &AppConfig) -> Result<(), ConfigError> {
     Ok(())
 }
 
+/// Inserts any schema keys missing from an existing config document.
+///
+/// Returns `Some(updated_toml)` only when the source needs changes.
 fn backfill_missing_keys(source: &str) -> Result<Option<String>, ConfigError> {
     let mut document = source
         .parse::<DocumentMut>()
@@ -145,6 +155,7 @@ fn backfill_missing_keys(source: &str) -> Result<Option<String>, ConfigError> {
     }
 }
 
+/// Inserts a default scalar key and appends its inline description comment.
 fn insert_default_key(table: &mut (impl TableLike + ?Sized), key: &ConfigKeySchema) {
     table.insert(key.name, value(key.default as i64));
     if let Some(item) = table.get_mut(key.name)
@@ -156,6 +167,7 @@ fn insert_default_key(table: &mut (impl TableLike + ?Sized), key: &ConfigKeySche
     }
 }
 
+/// Reads and deserializes user config if present, otherwise returns empty overrides.
 fn read_user_config(path: &Path) -> Result<UserConfig, ConfigError> {
     if !path.exists() {
         return Ok(UserConfig::default());
@@ -166,6 +178,7 @@ fn read_user_config(path: &Path) -> Result<UserConfig, ConfigError> {
         .map_err(|err| ConfigError::Parse(format!("invalid lazytask.toml: {err}")))
 }
 
+/// Validates a numeric config value against schema minimum constraints.
 fn validate_min(value: usize, section: &str, key: &str) -> Result<(), ConfigError> {
     let min = super::schema::min_usize(section, key);
     if value < min {
@@ -177,6 +190,9 @@ fn validate_min(value: usize, section: &str, key: &str) -> Result<(), ConfigErro
     Ok(())
 }
 
+/// Walks up from `start` and returns the nearest ancestor containing `.git`.
+///
+/// If no git root exists, returns `start` unchanged.
 pub(crate) fn find_workspace_root(start: &Path) -> PathBuf {
     let mut cursor = start.to_path_buf();
 

@@ -4,6 +4,9 @@ use chrono::{DateTime, Utc};
 use std::fs;
 
 impl Storage {
+    /// Deletes `done` and `discard` tasks whose `updated_at` is at or before `cutoff`.
+    ///
+    /// Active buckets are never touched.
     pub fn delete_terminal_tasks_updated_before(
         &self,
         cutoff: DateTime<Utc>,

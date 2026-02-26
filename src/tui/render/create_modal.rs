@@ -11,6 +11,7 @@ use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 const MODAL_WIDTH_PERCENT: u16 = 82;
 const MODAL_HEIGHT_PERCENT: u16 = 68;
 
+/// Renders the create/edit modal with field highlighting and inline validation hints.
 pub(super) fn render_create_modal(frame: &mut Frame, state: &CreateState, main_area: Rect) {
     let area = centered_rect(MODAL_WIDTH_PERCENT, MODAL_HEIGHT_PERCENT, main_area);
     frame.render_widget(Clear, area);
@@ -119,6 +120,7 @@ pub(super) fn render_create_modal(frame: &mut Frame, state: &CreateState, main_a
     frame.render_widget(modal, area);
 }
 
+/// Inserts a visual cursor marker at a UTF-8-safe byte position.
 fn with_cursor(text: &str, cursor_pos: usize, cursor: &str) -> String {
     let mut pos = cursor_pos.min(text.len());
     while pos > 0 && !text.is_char_boundary(pos) {
@@ -129,6 +131,7 @@ fn with_cursor(text: &str, cursor_pos: usize, cursor: &str) -> String {
     format!("{left}{cursor}{right}")
 }
 
+/// Builds title display text with placeholder and cursor behavior.
 fn title_value_text(title: &str, is_active: bool, cursor_pos: usize, cursor: &str) -> String {
     if title.is_empty() {
         if is_active {
@@ -143,6 +146,7 @@ fn title_value_text(title: &str, is_active: bool, cursor_pos: usize, cursor: &st
     }
 }
 
+/// Chooses value styling for empty vs active field states.
 fn value_style(is_empty: bool, is_active: bool, active_style: Style) -> Style {
     if is_empty {
         Style::default().fg(Color::DarkGray)
@@ -153,6 +157,7 @@ fn value_style(is_empty: bool, is_active: bool, active_style: Style) -> Style {
     }
 }
 
+/// Returns task-type color styling, bolding when the field is active.
 fn task_type_style(task_type: &TaskType, is_active: bool) -> Style {
     let base = match task_type {
         TaskType::Task => Style::default().fg(Color::Blue),
