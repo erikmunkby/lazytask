@@ -121,13 +121,19 @@ fn init_prompt_uses_agents_file_by_default() {
     let temp = TempDir::new().unwrap();
     let storage = storage_for_temp(&temp);
     let prompts = storage.prompts;
+    let prompt_markdown = crate::config::markdown_for_key(prompts.agent_init_key).unwrap();
 
     storage.ensure_agent_prompt_guidance().unwrap();
 
     let content = fs::read_to_string(temp.path().join(storage.layout.agents_file)).unwrap();
-    assert!(content.contains(prompts.important_block_start));
-    assert!(content.contains("lt list [--type task|bug] [--show-done]"));
-    assert!(content.contains("lt discard \"<title>\" --discard-note \"<short why>\""));
+    let start = content.find(prompts.important_block_start).unwrap();
+    let body_start = start + prompts.important_block_start.len();
+    let body_end = content[body_start..]
+        .find(prompts.important_block_end)
+        .map(|idx| body_start + idx)
+        .unwrap();
+    let inserted_body = content[body_start..body_end].trim_matches('\n');
+    assert_eq!(inserted_body, prompt_markdown.trim_matches('\n'));
 }
 
 #[test]
