@@ -11,6 +11,7 @@ tasks:
   fix:
     desc: Apply formatting and clippy-driven fixes
     cmds:
+      - bash scripts/sync_agent_init_prompt.sh --copy-if-mismatch
       - cargo clippy --all-targets --fix --allow-dirty --allow-staged -- -D warnings
       - cargo fmt --all
       - cargo clippy --all-targets -- -D warnings
@@ -19,6 +20,11 @@ tasks:
     desc: Run the Rust test suite
     cmds:
       - cargo test --all-targets
+
+  check-agent-prompt:
+    desc: Validate AGENTS prompt block matches agent_init prompt
+    cmds:
+      - bash scripts/sync_agent_init_prompt.sh
 
   install:
     desc: Install lazytask globally from this repository
