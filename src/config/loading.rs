@@ -97,8 +97,21 @@ pub fn load_for_workspace_root(workspace_root: impl AsRef<Path>) -> Result<AppCo
 ///
 /// Existing values are preserved; only missing sections/keys are backfilled.
 pub fn ensure_default_file(config: &AppConfig) -> Result<(), ConfigError> {
+    ensure_default_file_with_upgrade(config, false)
+}
+
+/// Ensures `lazytask.toml` exists, with optional full overwrite in upgrade mode.
+pub fn ensure_default_file_with_upgrade(
+    config: &AppConfig,
+    upgrade: bool,
+) -> Result<(), ConfigError> {
     let path = config.config_path();
     if !path.exists() {
+        fs::write(path, render_default_config_body())?;
+        return Ok(());
+    }
+
+    if upgrade {
         fs::write(path, render_default_config_body())?;
         return Ok(());
     }

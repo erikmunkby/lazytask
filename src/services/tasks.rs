@@ -13,9 +13,15 @@ impl TaskService {
     /// This ensures a default `lazytask.toml` exists, creates the `.tasks` layout,
     /// and appends agent guidance to the configured prompt file when missing.
     pub fn init(&self) -> Result<(), ServiceError> {
-        config::ensure_default_file(&self.config)?;
+        self.init_with_upgrade(false)
+    }
+
+    /// Bootstraps workspace state and optionally rewrites generated defaults.
+    pub fn init_with_upgrade(&self, upgrade: bool) -> Result<(), ServiceError> {
+        config::ensure_default_file_with_upgrade(&self.config, upgrade)?;
         self.storage.ensure_layout()?;
-        self.storage.ensure_agent_prompt_guidance()?;
+        self.storage
+            .ensure_agent_prompt_guidance_with_upgrade(upgrade)?;
         Ok(())
     }
 

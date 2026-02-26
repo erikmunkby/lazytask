@@ -30,9 +30,12 @@ pub(super) fn run_parsed(cli: Cli) -> Result<()> {
                 std::process::exit(2);
             }
         }
-        Some(Commands::Init) => {
+        Some(Commands::Init { upgrade }) => {
             let runtime = load_runtime().map_err(anyhow::Error::from)?;
-            runtime.service.init().map_err(anyhow::Error::from)?;
+            runtime
+                .service
+                .init_with_upgrade(upgrade)
+                .map_err(anyhow::Error::from)?;
             println!(
                 "initialized {} directories",
                 runtime.config.storage_layout.tasks_dir

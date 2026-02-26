@@ -71,10 +71,12 @@ Install instructions coming soon
 
 ```bash
 lt init    # creates .tasks/ layout + config file + agent guidance
+lt init --upgrade  # refreshes generated config + agent guidance defaults
 lt         # opens the TUI
 ```
 
-`lt init` also appends usage instructions to your `AGENTS.md` (or `CLAUDE.md`), so your AI agent knows how to use `lt` immediately.
+`lt init` also appends usage instructions to your `AGENTS.md` (or `CLAUDE.md`), so your AI agent knows how to use `lt` immediately.  
+Use `lt init --upgrade` after installing a new lazytask version to refresh generated defaults without overwriting `.tasks/`.
 
 ## Commands
 
@@ -84,6 +86,7 @@ lt         # opens the TUI
 |---|---|
 | `lt` | Open the TUI |
 | `lt init` | Initialize lazytask in your project |
+| `lt init --upgrade` | Refresh generated config and agent guidance defaults |
 
 ### AI commands
 

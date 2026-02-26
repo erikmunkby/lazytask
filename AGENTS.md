@@ -23,6 +23,7 @@ When agents complete tasks, they record learnings. `lt learn` surfaces unconsume
 Human entry points:
 - `lt` — opens the TUI (requires TTY)
 - `lt init` — creates `.tasks` layout + appends agent guidance to `AGENTS.md`/`CLAUDE.md`
+- `lt init --upgrade` — refreshes generated `lazytask.toml` + AGENTS guidance defaults without overwriting `.tasks/`
 
 AI commands (see <EXTREMELY_IMPORTANT> tag below).
 

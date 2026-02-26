@@ -174,6 +174,47 @@ fn init_backfills_missing_keys_without_overwriting_existing_values() {
 }
 
 #[test]
+fn init_upgrade_overwrites_config_and_guidance_without_touching_tasks() {
+    let temp = TempDir::new().unwrap();
+    let init = lt_command()
+        .current_dir(temp.path())
+        .args(["init"])
+        .output()
+        .unwrap();
+    assert!(init.status.success());
+
+    let keep_path = temp.path().join(".tasks/todo/keep-me.md");
+    let keep_body = "# Keep me\nstatus: todo\ntype: task\ncreated: 2026-01-01T00:00:00Z\nupdated: 2026-01-01T00:00:00Z\ndetails:\n  keep\n";
+    fs::write(&keep_path, keep_body).unwrap();
+    fs::write(temp.path().join("lazytask.toml"), "[limits]\ntodo = 99\n").unwrap();
+    fs::write(
+        temp.path().join("AGENTS.md"),
+        "before\n<EXTREMELY_IMPORTANT>\nold lazytask guidance\n</EXTREMELY_IMPORTANT>\nafter\n",
+    )
+    .unwrap();
+
+    let upgrade = lt_command()
+        .current_dir(temp.path())
+        .args(["init", "--upgrade"])
+        .output()
+        .unwrap();
+    assert!(upgrade.status.success());
+
+    let config = fs::read_to_string(temp.path().join("lazytask.toml")).unwrap();
+    assert!(config.contains("todo = 20"));
+    assert!(!config.contains("todo = 99"));
+
+    let agents = fs::read_to_string(temp.path().join("AGENTS.md")).unwrap();
+    assert!(
+        agents.contains("ALWAYS use lazytask (`lt`) for task and bug tracking in this project.")
+    );
+    assert!(!agents.contains("old lazytask guidance"));
+
+    assert!(keep_path.exists());
+    assert_eq!(fs::read_to_string(keep_path).unwrap(), keep_body);
+}
+
+#[test]
 fn runtime_cleanup_removes_expired_done_and_discard_before_list() {
     let temp = init_temp();
     create_task(&temp, "Recent done");

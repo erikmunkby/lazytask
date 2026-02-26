@@ -165,6 +165,33 @@ fn init_prompt_append_is_idempotent() {
 }
 
 #[test]
+fn init_prompt_upgrade_rewrites_existing_lazytask_block() {
+    let temp = TempDir::new().unwrap();
+    let storage = storage_for_temp(&temp);
+    let prompts = storage.prompts;
+    let path = temp.path().join(storage.layout.agents_file);
+    fs::write(
+        &path,
+        format!(
+            "header\n{}\nold lazytask guidance\n{}\nfooter\n",
+            prompts.important_block_start, prompts.important_block_end
+        ),
+    )
+    .unwrap();
+
+    storage
+        .ensure_agent_prompt_guidance_with_upgrade(true)
+        .unwrap();
+
+    let prompt_markdown = crate::config::markdown_for_key(prompts.agent_init_key).unwrap();
+    let content = fs::read_to_string(path).unwrap();
+    assert!(content.contains("header"));
+    assert!(content.contains("footer"));
+    assert!(content.contains(prompt_markdown.trim_matches('\n')));
+    assert!(!content.contains("old lazytask guidance"));
+}
+
+#[test]
 fn delete_terminal_tasks_updated_before_removes_only_expired_done_and_discard() {
     let temp = TempDir::new().unwrap();
     let storage = storage_for_temp(&temp);
