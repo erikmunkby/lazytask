@@ -127,7 +127,7 @@ fn init_prompt_uses_agents_file_by_default() {
     let content = fs::read_to_string(temp.path().join(storage.layout.agents_file)).unwrap();
     assert!(content.contains(prompts.important_block_start));
     assert!(content.contains("lt list [--type task|bug] [--show-done]"));
-    assert!(content.contains("lt discard \"<title>\" --discard-note \"<note>\""));
+    assert!(content.contains("lt discard \"<title>\" --discard-note \"<short why>\""));
 }
 
 #[test]
