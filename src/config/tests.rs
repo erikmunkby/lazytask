@@ -148,3 +148,23 @@ fn ensure_default_file_is_idempotent_after_backfill() {
 
     assert_eq!(first, second);
 }
+
+#[test]
+fn ensure_default_file_upgrade_overwrites_existing_values() {
+    let temp = TempDir::new().unwrap();
+    let config = load_for_workspace_root(temp.path()).unwrap();
+    fs::write(
+        temp.path().join("lazytask.toml"),
+        "[limits]\ntodo = 9\nin_progress = 1\n\n[hints]\nlearn_threshold = 1\n",
+    )
+    .unwrap();
+
+    ensure_default_file_with_upgrade(&config, true).unwrap();
+
+    let body = fs::read_to_string(temp.path().join("lazytask.toml")).unwrap();
+    assert!(body.contains("todo = 20"));
+    assert!(body.contains("in_progress = 3"));
+    assert!(body.contains("learn_threshold = 35"));
+    assert!(!body.contains("todo = 9"));
+    assert!(!body.contains("learn_threshold = 1"));
+}

@@ -11,7 +11,11 @@ pub(super) struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub(super) enum Commands {
-    Init,
+    Init {
+        /// Rewrite generated config and guidance defaults without touching `.tasks/`.
+        #[arg(long, default_value_t = false)]
+        upgrade: bool,
+    },
     List {
         #[arg(long = "type", value_enum)]
         task_type: Option<TaskType>,

@@ -11,7 +11,7 @@ pub(super) fn run_ai_command(
     command: Commands,
 ) -> Result<(Value, Option<String>), ServiceError> {
     match command {
-        Commands::Init => unreachable!("init is handled before AI dispatch"),
+        Commands::Init { .. } => unreachable!("init is handled before AI dispatch"),
         Commands::List {
             task_type,
             show_done,
