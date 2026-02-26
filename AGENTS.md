@@ -42,6 +42,13 @@ AI commands (see <EXTREMELY_IMPORTANT> tag below).
 - `lt init` writes generated artifacts (`.tasks/`, `lazytask.toml`, and AGENTS guidance) at the workspace root that `lt` resolves.
 - When `lazytask` runs inside a project, workspace root resolves to the nearest `.git` ancestor if present; otherwise it uses the current working directory.
 
+## Taskfile.yml
+This project uses taskfile for commands. Examples:
+```sh
+task fix # Linting and formatting. Use frequently
+task test # Full test suite
+```
+
 ## Engineering rules
 - When developing and experimenting, use e.g. `cargo run -- create --help`
 - Layers stay separate: domain, storage, services, CLI, TUI.
