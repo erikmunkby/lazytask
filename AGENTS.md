@@ -25,7 +25,7 @@ Human entry points:
 - `lt init` — creates `.tasks` layout + appends agent guidance to `AGENTS.md`/`CLAUDE.md`
 - `lt init --upgrade` — refreshes generated `lazytask.toml` + AGENTS guidance defaults without overwriting `.tasks/`
 
-AI commands (see <EXTREMELY_IMPORTANT> tag below).
+AI commands (see xml tag below).
 
 ## Important documents/files
 - `src/tui/` Terminal User Interface implementation
@@ -90,11 +90,11 @@ One task = one completable unit of work. Split larger efforts.
 
 Commands (all return JSON):
   lt list [--type task|bug] [--show-done]
-  lt get "<title>" ["<title2>" ...]
-  lt create --title "<title>" --type task|bug --details "<desc>" [--start]
-  lt start "<title>"
-  lt done "<title>" --learning "<learning>"
-  lt discard "<title>" --discard-note "<short why>"  # won't do
+  lt get '<title>' ['<title2>' ...]
+  lt create --title '<title>' --type task|bug --details '<desc>' [--start]
+  lt start '<title>'
+  lt done '<title>' --learning '<learning>'
+  lt discard '<title>' --discard-note '<short why>'  # won't do
   lt learn
 
 Learnings (required with `lt done`):

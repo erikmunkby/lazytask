@@ -15,11 +15,11 @@ One task = one completable unit of work. Split larger efforts.
 
 Commands (all return JSON):
   lt list [--type task|bug] [--show-done]
-  lt get "<title>" ["<title2>" ...]
-  lt create --title "<title>" --type task|bug --details "<desc>" [--start]
-  lt start "<title>"
-  lt done "<title>" --learning "<learning>"
-  lt discard "<title>" --discard-note "<short why>"  # won't do
+  lt get '<title>' ['<title2>' ...]
+  lt create --title '<title>' --type task|bug --details '<desc>' [--start]
+  lt start '<title>'
+  lt done '<title>' --learning '<learning>'
+  lt discard '<title>' --discard-note '<short why>'  # won't do
   lt learn
 
 Learnings (required with `lt done`):
