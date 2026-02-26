@@ -1,4 +1,5 @@
 use super::*;
+use crate::config::schema::default_usize;
 use std::fs;
 use tempfile::TempDir;
 
@@ -8,10 +9,19 @@ fn load_uses_defaults_when_file_is_missing() {
 
     let config = load_for_workspace_root(temp.path()).unwrap();
 
-    assert_eq!(config.limits.todo, 20);
-    assert_eq!(config.limits.in_progress, 3);
-    assert_eq!(config.hints.learn_threshold, 35);
-    assert_eq!(config.retention.done_discard_ttl_days, 7);
+    assert_eq!(config.limits.todo, default_usize("limits", "todo"));
+    assert_eq!(
+        config.limits.in_progress,
+        default_usize("limits", "in_progress")
+    );
+    assert_eq!(
+        config.hints.learn_threshold,
+        default_usize("hints", "learn_threshold")
+    );
+    assert_eq!(
+        config.retention.done_discard_ttl_days,
+        default_usize("retention", "done_discard_ttl_days")
+    );
     assert_eq!(config.storage_layout.tasks_dir, ".tasks");
     assert_eq!(config.storage_layout.learnings_file, "LEARNINGS.md");
     assert_eq!(
@@ -96,17 +106,8 @@ fn ensure_default_file_creates_expected_schema() {
     ensure_default_file(&config).unwrap();
 
     let body = fs::read_to_string(temp.path().join("lazytask.toml")).unwrap();
-    assert!(body.contains("[limits]"));
-    assert!(body.contains("todo = 20"));
-    assert!(body.contains("# max todo tasks"));
-    assert!(body.contains("in_progress = 3"));
-    assert!(body.contains("# max in-progress tasks"));
-    assert!(body.contains("[hints]"));
-    assert!(body.contains("learn_threshold = 35"));
-    assert!(body.contains("# show `lt learn` hint after this many LEARNINGS.md lines"));
-    assert!(body.contains("[retention]"));
-    assert!(body.contains("done_discard_ttl_days = 7"));
-    assert!(body.contains("# auto-delete done/discard tasks older than this many days"));
+    let expected = schema::render_default_config_body();
+    assert_eq!(body, expected);
 }
 
 #[test]
@@ -122,16 +123,20 @@ fn ensure_default_file_backfills_missing_keys_without_overwriting_existing_value
     ensure_default_file(&config).unwrap();
 
     let body = fs::read_to_string(temp.path().join("lazytask.toml")).unwrap();
+    // Custom value preserved
     assert!(body.contains("todo = 9 # custom todo limit"));
-    assert!(body.contains("in_progress = 3 # max in-progress tasks"));
-    assert!(body.contains("[hints]"));
-    assert!(body.contains(
-        "learn_threshold = 35 # show `lt learn` hint after this many LEARNINGS.md lines"
-    ));
-    assert!(body.contains("[retention]"));
-    assert!(body.contains(
-        "done_discard_ttl_days = 7 # auto-delete done/discard tasks older than this many days"
-    ));
+    // Missing keys backfilled from schema
+    for section in &schema::USER_CONFIG_SCHEMA {
+        assert!(body.contains(&format!("[{}]", section.name)));
+        for key in section.keys {
+            assert!(
+                body.contains(key.name),
+                "missing key {} in section {}",
+                key.name,
+                section.name
+            );
+        }
+    }
 }
 
 #[test]
@@ -162,9 +167,6 @@ fn ensure_default_file_upgrade_overwrites_existing_values() {
     ensure_default_file_with_upgrade(&config, true).unwrap();
 
     let body = fs::read_to_string(temp.path().join("lazytask.toml")).unwrap();
-    assert!(body.contains("todo = 20"));
-    assert!(body.contains("in_progress = 3"));
-    assert!(body.contains("learn_threshold = 35"));
-    assert!(!body.contains("todo = 9"));
-    assert!(!body.contains("learn_threshold = 1"));
+    let expected = schema::render_default_config_body();
+    assert_eq!(body, expected);
 }

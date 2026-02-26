@@ -96,10 +96,10 @@ All AI commands return a consistent JSON envelope: `{"ok": bool, "data": ...}` o
 |---|---|
 | `lt list [--type task\|bug] [--show-done]` | List tasks |
 | `lt get <query>...` | Get task details |
-| `lt create --title "..." --type task\|bug --details "..." [--start]` | Create a task |
+| `lt create --title '...' --type task\|bug --details '...' [--start]` | Create a task |
 | `lt start <query>` | Move task to in-progress |
-| `lt done <query> --learning "..."` | Complete task with a learning |
-| `lt discard <query> --discard-note "..."` | Discard a task |
+| `lt done <query> --learning '...'` | Complete task with a learning |
+| `lt discard <query> --discard-note '...'` | Discard a task |
 | `lt learn` | Distill learnings into improvements |
 
 ## Configuration
@@ -115,7 +115,7 @@ in_progress = 3    # max tasks in progress
 learn_threshold = 35
 
 [retention]
-done_discard_ttl_days = 7 # auto-delete done/discard tasks older than this many days
+done_discard_ttl_days = 3 # auto-delete done/discard tasks older than this many days
 ```
 
 ## Acknowledgements

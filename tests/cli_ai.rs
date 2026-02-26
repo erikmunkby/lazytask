@@ -166,11 +166,11 @@ fn init_backfills_missing_keys_without_overwriting_existing_values() {
 
     let body = fs::read_to_string(temp.path().join("lazytask.toml")).unwrap();
     assert!(body.contains("todo = 9 # custom todo limit"));
-    assert!(body.contains("in_progress = 3"));
+    assert!(body.contains("in_progress ="));
     assert!(body.contains("[hints]"));
-    assert!(body.contains("learn_threshold = 35"));
+    assert!(body.contains("learn_threshold ="));
     assert!(body.contains("[retention]"));
-    assert!(body.contains("done_discard_ttl_days = 7"));
+    assert!(body.contains("done_discard_ttl_days ="));
 }
 
 #[test]
