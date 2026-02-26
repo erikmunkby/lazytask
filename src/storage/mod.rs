@@ -36,6 +36,7 @@ pub struct Storage {
 }
 
 impl Storage {
+    /// Creates a storage handle rooted at an explicit workspace path.
     pub fn from_path(path: PathBuf, layout: StorageLayoutConfig, prompts: PromptConfig) -> Self {
         Self {
             workspace_root: path,
@@ -44,6 +45,7 @@ impl Storage {
         }
     }
 
+    /// Creates storage from the runtime app config.
     pub fn from_app_config(config: &AppConfig) -> Self {
         Self::from_path(
             config.workspace_root.clone(),
@@ -52,14 +54,17 @@ impl Storage {
         )
     }
 
+    /// Returns the `.tasks` root path for this workspace.
     pub fn tasks_root(&self) -> PathBuf {
         self.workspace_root.join(self.layout.tasks_dir)
     }
 
+    /// Returns the path to the shared learnings markdown file.
     pub fn learnings_path(&self) -> PathBuf {
         self.tasks_root().join(self.layout.learnings_file)
     }
 
+    /// Creates all task status buckets if they do not already exist.
     pub fn ensure_layout(&self) -> Result<(), StorageError> {
         fs::create_dir_all(self.bucket_path(TaskStatus::Todo))?;
         fs::create_dir_all(self.bucket_path(TaskStatus::InProgress))?;
@@ -68,6 +73,9 @@ impl Storage {
         Ok(())
     }
 
+    /// Verifies required task layout exists before read/write operations.
+    ///
+    /// The discard bucket is auto-created for older workspaces that predate it.
     pub fn require_layout(&self) -> Result<(), StorageError> {
         if !self.tasks_root().is_dir()
             || !self.bucket_path(TaskStatus::Todo).is_dir()
@@ -83,6 +91,7 @@ impl Storage {
         Ok(())
     }
 
+    /// Returns the directory for a specific task status bucket.
     pub fn bucket_path(&self, status: TaskStatus) -> PathBuf {
         match status {
             TaskStatus::Todo => self.tasks_root().join(self.layout.todo_dir),
@@ -92,6 +101,7 @@ impl Storage {
         }
     }
 
+    /// Returns the canonical markdown path for a task based on status + file name.
     pub(crate) fn task_path(&self, task: &Task) -> PathBuf {
         self.bucket_path(task.status)
             .join(format!("{}.md", task.file_name))

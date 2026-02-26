@@ -26,6 +26,7 @@ pub struct CreateState {
 }
 
 impl CreateState {
+    /// Initializes empty state for creating a brand-new task.
     pub(super) fn new_create() -> Self {
         Self {
             editor_mode: EditorMode::Create,
@@ -37,6 +38,7 @@ impl CreateState {
         }
     }
 
+    /// Initializes edit state from an existing task snapshot.
     pub(super) fn from_task(task: &Task) -> Self {
         Self {
             editor_mode: EditorMode::Edit {
@@ -50,10 +52,12 @@ impl CreateState {
         }
     }
 
+    /// True when this state is editing an existing task rather than creating one.
     pub(crate) fn is_editing(&self) -> bool {
         matches!(self.editor_mode, EditorMode::Edit { .. })
     }
 
+    /// Returns the text content for whichever field is currently active.
     pub(super) fn active_text(&self) -> &str {
         match self.active_field {
             CreateField::Title => &self.title,
@@ -62,6 +66,7 @@ impl CreateState {
         }
     }
 
+    /// Inserts a character or toggles task type when the type field is active.
     pub(super) fn insert_char(&mut self, ch: char) {
         match self.active_field {
             CreateField::Title => {
@@ -81,6 +86,7 @@ impl CreateState {
         }
     }
 
+    /// Deletes one previous Unicode scalar from the active text field.
     pub(super) fn delete_char(&mut self) {
         if self.cursor_pos == 0 {
             return;
@@ -100,6 +106,7 @@ impl CreateState {
         }
     }
 
+    /// Moves cursor left to the previous UTF-8 character boundary.
     pub(super) fn move_cursor_left(&mut self) {
         if self.cursor_pos > 0 {
             let text = self.active_text();
@@ -107,6 +114,7 @@ impl CreateState {
         }
     }
 
+    /// Moves cursor right to the next UTF-8 character boundary.
     pub(super) fn move_cursor_right(&mut self) {
         let len = self.active_text().len();
         if self.cursor_pos < len {
@@ -119,12 +127,14 @@ impl CreateState {
         }
     }
 
+    /// Changes active field and snaps cursor to the end of that field.
     pub(super) fn switch_to(&mut self, field: CreateField) {
         self.active_field = field;
         self.cursor_pos = self.active_text().len();
     }
 }
 
+/// Returns the nearest valid previous UTF-8 character boundary.
 fn prev_char_boundary(s: &str, pos: usize) -> usize {
     let mut p = pos.saturating_sub(1);
     while p > 0 && !s.is_char_boundary(p) {
@@ -133,6 +143,7 @@ fn prev_char_boundary(s: &str, pos: usize) -> usize {
     p
 }
 
+/// Returns the nearest valid next UTF-8 character boundary.
 fn next_char_boundary(s: &str, pos: usize) -> usize {
     let mut p = pos + 1;
     while p < s.len() && !s.is_char_boundary(p) {

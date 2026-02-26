@@ -5,6 +5,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 impl TaskService {
+    /// Opens a task markdown file in the best available local editor command.
     pub fn open_task_in_editor(&self, task: &Task) -> Result<String, ServiceError> {
         self.storage.require_layout()?;
         let task_path = self.storage.task_path(task);
@@ -12,6 +13,7 @@ impl TaskService {
     }
 }
 
+/// Tries editor candidates in priority order until one succeeds.
 fn open_path_in_editor(path: &Path) -> Result<String, ServiceError> {
     let candidates = build_candidates(&std::env::vars().collect());
     let mut failures = Vec::new();
@@ -30,6 +32,7 @@ fn open_path_in_editor(path: &Path) -> Result<String, ServiceError> {
     )))
 }
 
+/// Launches a single editor command and returns a user-readable failure message.
 fn launch_candidate(candidate: &EditorCandidate, path: &Path) -> Result<(), String> {
     let mut command = Command::new(&candidate.program);
     command
@@ -46,6 +49,7 @@ fn launch_candidate(candidate: &EditorCandidate, path: &Path) -> Result<(), Stri
     }
 }
 
+/// Builds editor candidates from terminal context and editor environment variables.
 fn build_candidates(env: &HashMap<String, String>) -> Vec<EditorCandidate> {
     let mut candidates = Vec::new();
     if in_cursor_terminal(env) {
@@ -72,12 +76,14 @@ fn build_candidates(env: &HashMap<String, String>) -> Vec<EditorCandidate> {
     candidates
 }
 
+/// Detects whether commands are running inside a Cursor-integrated terminal.
 fn in_cursor_terminal(env: &HashMap<String, String>) -> bool {
     env.get("TERM_PROGRAM")
         .is_some_and(|value| value.eq_ignore_ascii_case("cursor"))
         || env.contains_key("CURSOR_TRACE_ID")
 }
 
+/// Detects whether commands are running inside a VS Code-integrated terminal.
 fn in_vscode_terminal(env: &HashMap<String, String>) -> bool {
     env.get("TERM_PROGRAM")
         .is_some_and(|value| value.eq_ignore_ascii_case("vscode"))
@@ -92,6 +98,7 @@ struct EditorCandidate {
 }
 
 impl EditorCandidate {
+    /// Builds a candidate from a plain executable name.
     fn from_program(program: &str) -> Self {
         Self {
             label: program.to_string(),
@@ -100,6 +107,7 @@ impl EditorCandidate {
         }
     }
 
+    /// Parses `$VISUAL`/`$EDITOR` into executable plus argument list.
     fn from_editor_env(value: &str) -> Option<Self> {
         let mut parts = value.split_whitespace();
         let program = parts.next()?.trim();
@@ -113,6 +121,7 @@ impl EditorCandidate {
         })
     }
 
+    /// Returns a stable key for deduplicating equivalent launch commands.
     fn dedupe_key(&self) -> String {
         if self.args.is_empty() {
             return self.program.clone();

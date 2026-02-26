@@ -12,6 +12,7 @@ const STATUS_COL_WIDTH: u16 = 6;
 const TYPE_COL_WIDTH: u16 = 4;
 const UPDATED_COL_WIDTH: u16 = 8;
 
+/// Maps task status to compact table display tokens.
 fn status_display(status: TaskStatus) -> &'static str {
     match status {
         TaskStatus::Todo => "todo",
@@ -21,6 +22,7 @@ fn status_display(status: TaskStatus) -> &'static str {
     }
 }
 
+/// Renders the left-side task table with status grouping separator.
 pub fn render(
     frame: &mut Frame,
     area: ratatui::layout::Rect,
@@ -64,6 +66,7 @@ pub fn render(
     frame.render_stateful_widget(table, area, &mut table_state);
 }
 
+/// Builds one styled table row for a task item.
 fn task_row<'a>(task: &'a Task, now: chrono::DateTime<chrono::Utc>) -> Row<'a> {
     let status_style = match task.status {
         TaskStatus::Todo => DIMMED,
@@ -84,6 +87,7 @@ fn task_row<'a>(task: &'a Task, now: chrono::DateTime<chrono::Utc>) -> Row<'a> {
     ])
 }
 
+/// Returns a dimmed divider row used between active and completed groups.
 fn separator_row() -> Row<'static> {
     let dash = "----".repeat(50);
     let cells = (0..COLUMN_COUNT)
@@ -92,6 +96,7 @@ fn separator_row() -> Row<'static> {
     Row::new(cells).style(DIMMED)
 }
 
+/// Defines fixed table column constraints shared across renders.
 fn column_constraints() -> [Constraint; COLUMN_COUNT] {
     [
         Constraint::Fill(1),
@@ -103,6 +108,7 @@ fn column_constraints() -> [Constraint; COLUMN_COUNT] {
     ]
 }
 
+/// Returns insertion index for the active/completed group separator row.
 fn completed_separator_index(tasks: &[Task]) -> Option<usize> {
     let has_active = tasks
         .iter()
@@ -113,6 +119,7 @@ fn completed_separator_index(tasks: &[Task]) -> Option<usize> {
     if has_active { first_completed } else { None }
 }
 
+/// Translates task index to rendered row index when a separator row is present.
 fn display_selected_index(selected_index: usize, separator_index: Option<usize>) -> usize {
     match separator_index {
         Some(index) if selected_index >= index => selected_index + 1,

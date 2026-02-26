@@ -7,6 +7,7 @@ use std::str::FromStr;
 
 const DIMMED: Style = Style::new().fg(Color::DarkGray);
 
+/// Renders task markdown preview with lightweight metadata-aware styling.
 pub fn render(frame: &mut Frame, area: ratatui::layout::Rect, preview_text: &str) {
     let mut section = None;
     let lines: Vec<Line> = preview_text
@@ -51,6 +52,7 @@ pub fn render(frame: &mut Frame, area: ratatui::layout::Rect, preview_text: &str
     frame.render_widget(paragraph, area);
 }
 
+/// Parses known metadata lines from task markdown (`key: value`).
 fn try_parse_metadata(line: &str) -> Option<(&str, &str)> {
     let keys = [
         "status",
@@ -67,6 +69,7 @@ fn try_parse_metadata(line: &str) -> Option<(&str, &str)> {
     None
 }
 
+/// Formats metadata values for display, including localized timestamps.
 fn display_metadata_value(key: &str, value: &str) -> String {
     match key {
         "created" | "updated" => parse_utc(value)
@@ -76,10 +79,12 @@ fn display_metadata_value(key: &str, value: &str) -> String {
     }
 }
 
+/// Returns style used for metadata labels.
 fn metadata_label_style() -> Style {
     Style::default().fg(Color::Magenta)
 }
 
+/// Chooses metadata value colors aligned with table/status semantics.
 fn metadata_value_style(key: &str, value: &str) -> Style {
     match key {
         "status" => match TaskStatus::from_str(value) {

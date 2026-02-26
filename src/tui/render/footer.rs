@@ -4,6 +4,7 @@ use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
+/// Renders the single-line footer hint strip.
 pub(super) fn render_key_hints(frame: &mut Frame, area: Rect) {
     let key_style = Style::default().fg(Color::Cyan);
     let keys = key_hints();
@@ -21,6 +22,7 @@ pub(super) fn render_key_hints(frame: &mut Frame, area: Rect) {
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
+/// Returns the compact set of primary key hints shown in the footer.
 fn key_hints() -> [&'static str; 7] {
     [
         "Nav: ↑/↓",

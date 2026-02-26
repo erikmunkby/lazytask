@@ -56,6 +56,7 @@ pub(crate) const USER_CONFIG_SCHEMA: [ConfigSectionSchema; 3] = [
     },
 ];
 
+/// Looks up schema metadata for a config key.
 pub(crate) fn key_schema(section: &str, key: &str) -> Option<&'static ConfigKeySchema> {
     USER_CONFIG_SCHEMA
         .iter()
@@ -63,18 +64,21 @@ pub(crate) fn key_schema(section: &str, key: &str) -> Option<&'static ConfigKeyS
         .and_then(|candidate| candidate.keys.iter().find(|entry| entry.name == key))
 }
 
+/// Returns the default value for a known schema key.
 pub(crate) fn default_usize(section: &str, key: &str) -> usize {
     key_schema(section, key)
         .map(|entry| entry.default)
         .unwrap_or_else(|| panic!("missing schema entry for {section}.{key}"))
 }
 
+/// Returns the minimum allowed value for a known schema key.
 pub(crate) fn min_usize(section: &str, key: &str) -> usize {
     key_schema(section, key)
         .map(|entry| entry.min)
         .unwrap_or_else(|| panic!("missing schema entry for {section}.{key}"))
 }
 
+/// Renders the full default `lazytask.toml` body from schema constants.
 pub(crate) fn render_default_config_body() -> String {
     let mut body = String::new();
 

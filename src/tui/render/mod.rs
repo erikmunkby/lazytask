@@ -8,6 +8,7 @@ use crate::tui::components::{log_panel, preview, task_list};
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout};
 
+/// Renders the full TUI frame, including modal overlays for active modes.
 pub fn render(frame: &mut Frame, state: &AppState) {
     let layout = Layout::default()
         .direction(Direction::Vertical)

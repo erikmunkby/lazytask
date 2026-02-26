@@ -41,6 +41,7 @@ pub enum CreateField {
 }
 
 impl CreateField {
+    /// Advances focus to the next editable field without wrapping.
     pub fn next(self) -> Self {
         match self {
             Self::Title => Self::Type,
@@ -49,6 +50,7 @@ impl CreateField {
         }
     }
 
+    /// Moves focus to the previous editable field without wrapping.
     pub fn prev(self) -> Self {
         match self {
             Self::Title => Self::Title,

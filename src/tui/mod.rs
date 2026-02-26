@@ -18,6 +18,7 @@ use std::time::Duration;
 use crate::tui::app::App;
 use crate::tui::render::render;
 
+/// Runs the interactive TUI loop until quit.
 pub fn run(service: TaskService, learn_threshold: usize) -> Result<()> {
     let mut guard = TerminalGuard::setup()?;
     let mut app = App::new(service, learn_threshold);
@@ -55,6 +56,7 @@ struct TerminalGuard {
 }
 
 impl TerminalGuard {
+    /// Enables raw mode and switches into the alternate screen buffer.
     fn setup() -> Result<Self> {
         enable_raw_mode()?;
         let mut stdout = io::stdout();
@@ -64,6 +66,7 @@ impl TerminalGuard {
         Ok(Self { terminal })
     }
 
+    /// Temporarily suspends the TUI to run an external terminal-bound action.
     fn run_suspended<T>(&mut self, action: impl FnOnce() -> T) -> Result<T> {
         self.suspend()?;
         let result = action();
@@ -71,6 +74,7 @@ impl TerminalGuard {
         Ok(result)
     }
 
+    /// Restores normal terminal mode before launching an external action.
     fn suspend(&mut self) -> Result<()> {
         disable_raw_mode()?;
         self.terminal.backend_mut().execute(LeaveAlternateScreen)?;
@@ -78,6 +82,7 @@ impl TerminalGuard {
         Ok(())
     }
 
+    /// Re-enters alternate-screen raw mode after a suspended action completes.
     fn resume(&mut self) -> Result<()> {
         enable_raw_mode()?;
         self.terminal.backend_mut().execute(EnterAlternateScreen)?;
@@ -87,6 +92,7 @@ impl TerminalGuard {
     }
 }
 
+/// True when the open-in-editor hotkey is pressed in normal mode.
 fn is_open_hotkey_in_normal_mode(is_normal_mode: bool, key: KeyEvent) -> bool {
     is_normal_mode && key.code == KeyCode::Char('o') && key.modifiers == KeyModifiers::NONE
 }

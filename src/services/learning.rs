@@ -3,6 +3,7 @@ use crate::config::markdown_for_key;
 use crate::domain::Task;
 
 impl TaskService {
+    /// Returns pending learnings plus the prompt instructions for processing them.
     pub fn learn(&self) -> Result<LearnResult, ServiceError> {
         self.storage.require_layout()?;
         let mut entries = self.storage.read_learning_entries()?;
@@ -28,16 +29,19 @@ impl TaskService {
         })
     }
 
+    /// Clears the learnings queue after a successful review cycle.
     pub fn learn_finished(&self) -> Result<(), ServiceError> {
         self.storage.require_layout()?;
         self.storage.clear_learnings()?;
         Ok(())
     }
 
+    /// Returns the current learnings line count for threshold hinting.
     pub fn learnings_line_count(&self) -> Result<usize, ServiceError> {
         Ok(self.storage.learnings_line_count()?)
     }
 
+    /// Reads the raw markdown content of a task file.
     pub fn read_task_content(&self, task: &Task) -> Result<String, ServiceError> {
         Ok(self.storage.read_task_content(task)?)
     }

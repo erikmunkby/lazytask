@@ -15,6 +15,7 @@ pub struct App {
 }
 
 impl App {
+    /// Creates app state with empty task data and normal interaction mode.
     pub fn new(service: TaskService, learn_threshold: usize) -> Self {
         Self {
             service,

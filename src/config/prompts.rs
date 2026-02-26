@@ -25,6 +25,7 @@ pub const DEFAULT_PROMPT_CONFIG: PromptConfig = PromptConfig {
     important_block_end: "</EXTREMELY_IMPORTANT>",
 };
 
+/// Returns prompt markdown by logical key with metadata headers stripped.
 pub fn markdown_for_key(key: &str) -> Option<&'static str> {
     match key {
         "agent_init" => Some(prompt_body(AGENT_INIT_PROMPT)),
@@ -34,6 +35,7 @@ pub fn markdown_for_key(key: &str) -> Option<&'static str> {
     }
 }
 
+/// Removes frontmatter-style metadata wrappers from embedded prompt assets.
 fn prompt_body(markdown: &'static str) -> &'static str {
     if let Some(after_open) = markdown
         .strip_prefix("<!---")
