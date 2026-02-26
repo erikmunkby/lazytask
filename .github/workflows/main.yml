@@ -1,0 +1,13 @@
+name: ✅ Main CI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: 🧪 CI
+    uses: ./.github/workflows/pr.yml

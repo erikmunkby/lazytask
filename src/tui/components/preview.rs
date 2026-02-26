@@ -39,7 +39,10 @@ pub fn render(frame: &mut Frame, area: ratatui::layout::Rect, preview_text: &str
             }
 
             if section == Some("discard-note") {
-                return Line::from(Span::styled(line.to_string(), Style::default().fg(Color::Red)));
+                return Line::from(Span::styled(
+                    line.to_string(),
+                    Style::default().fg(Color::Red),
+                ));
             }
 
             Line::from(line.to_string())
