@@ -36,7 +36,7 @@ const HINTS_KEYS: [ConfigKeySchema; 1] = [ConfigKeySchema {
 
 const RETENTION_KEYS: [ConfigKeySchema; 1] = [ConfigKeySchema {
     name: "done_discard_ttl_days",
-    default: 7,
+    default: 3,
     description: "auto-delete done/discard tasks older than this many days",
     min: 1,
 }];
