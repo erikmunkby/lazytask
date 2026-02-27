@@ -13,20 +13,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gitlint:
+    name: 📝 Commit messages
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 Install gitlint
+        run: pip install gitlint
+
+      - name: 📝 Lint commit messages
+        run: gitlint --commits "origin/${{ github.base_ref }}..HEAD"
+
   lint:
     name: 🔍 Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: 🦀 Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
         with:
           toolchain: 1.93.1
           components: rustfmt, clippy
 
       - name: 🗂️ Cache Rust artifacts
-        uses: swatinem/rust-cache@v2
+        uses: swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
 
       - name: 🧩 Validate AGENTS prompt block
         run: bash scripts/sync_agent_init_prompt.sh
@@ -41,15 +56,15 @@ jobs:
     name: 🧪 Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: 🦀 Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
         with:
           toolchain: 1.93.1
 
       - name: 🗂️ Cache Rust artifacts
-        uses: swatinem/rust-cache@v2
+        uses: swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
 
       - name: 🧪 Run test suite
         run: cargo test --all-targets
