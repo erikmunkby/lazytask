@@ -1,7 +1,7 @@
 use chrono::Utc;
-use lt::config::load_for_workspace_root;
-use lt::domain::{TaskStatus, TaskType};
-use lt::storage::{Storage, StorageError};
+use lazytask::config::load_for_workspace_root;
+use lazytask::domain::{TaskStatus, TaskType};
+use lazytask::storage::{Storage, StorageError};
 use std::path::Path;
 use tempfile::TempDir;
 

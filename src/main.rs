@@ -1,5 +1,5 @@
 fn main() {
-    if let Err(err) = lt::cli::run() {
+    if let Err(err) = lazytask::cli::run() {
         eprintln!("{err}");
         std::process::exit(1);
     }

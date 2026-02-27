@@ -1,6 +1,6 @@
-# Contributing to `lt`
+# Contributing to lazytask
 
-Thanks for contributing.
+Thanks for contributing!
 
 ## Development setup
 

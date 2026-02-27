@@ -1,9 +1,9 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use lt::config::load_for_workspace_root;
-use lt::domain::TaskType;
-use lt::services::{CreateTaskInput, TaskService};
-use lt::tui::actions::Action;
-use lt::tui::app::App;
+use lazytask::config::load_for_workspace_root;
+use lazytask::domain::TaskType;
+use lazytask::services::{CreateTaskInput, TaskService};
+use lazytask::tui::actions::Action;
+use lazytask::tui::app::App;
 use std::path::Path;
 use tempfile::TempDir;
 
@@ -49,7 +49,7 @@ fn create_mode_cancel_returns_to_normal() {
     app.dispatch(Action::CreateTaskRequested);
     app.on_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
 
-    assert!(matches!(app.state.mode, lt::tui::app::Mode::Normal));
+    assert!(matches!(app.state.mode, lazytask::tui::app::Mode::Normal));
 }
 
 #[test]
@@ -149,7 +149,7 @@ fn edit_mode_cancel_keeps_task_unchanged() {
     app.on_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
     app.dispatch(Action::RefreshTasks);
 
-    assert!(matches!(app.state.mode, lt::tui::app::Mode::Normal));
+    assert!(matches!(app.state.mode, lazytask::tui::app::Mode::Normal));
     assert_eq!(app.state.tasks.len(), 1);
     assert_eq!(app.state.tasks[0].title, "Editable task");
     assert_eq!(app.state.tasks[0].details, "before");
@@ -207,7 +207,7 @@ fn discarded_task_cannot_be_edited_started_or_done() {
     app.dispatch(Action::RefreshTasks);
 
     app.on_key(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE));
-    assert!(matches!(app.state.mode, lt::tui::app::Mode::Normal));
+    assert!(matches!(app.state.mode, lazytask::tui::app::Mode::Normal));
     assert_eq!(
         app.state.log_entries.back().unwrap().message,
         "discarded tasks are terminal; delete instead"
