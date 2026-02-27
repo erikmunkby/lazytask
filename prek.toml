@@ -7,6 +7,12 @@ hooks = [
   { id = "gitlint", stages = ["commit-msg"], args = ["--msg-filename"] },
 ]
 [[repos]]
+repo = "https://github.com/rhysd/actionlint"
+rev = "v1.7.11"
+hooks = [
+  { id = "actionlint" },
+]
+[[repos]]
 repo = "builtin"
 hooks = [
   { id = "check-symlinks" },
