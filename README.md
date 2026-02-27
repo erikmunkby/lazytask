@@ -10,11 +10,7 @@ Built in Rust. Fast to run, easy to understand.
 [![Rust](https://img.shields.io/badge/Rust-000?logo=rust&logoColor=fff)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[Getting started](#getting-started) · [How it works](#how-it-works) · [Commands](#commands) · [Configuration](#configuration)
-
-<br>
-
-![lazytask TUI demo](docs/assets/lazytask_recording.gif)
+[Why lazytask?](#why-lazytask) · [How it works](#how-it-works) · [Getting started](#getting-started) · [Commands](#commands) · [Configuration](#configuration)
 
 </div>
 
@@ -22,11 +18,25 @@ Built in Rust. Fast to run, easy to understand.
 
 ## Why lazytask?
 
-**Your AI agent needs a task manager it can actually use** — and you need a way to stay in control. lazytask is both: a strict CLI for agents, a keyboard-driven TUI for humans.
+AI coding agents are powerful, but they have blind spots. lazytask makes building easier for AI and for you.
 
-No sync. No server. No database. Just files.
+### 🧩 Simple by design
 
-> **Sophisticated simplicity** — if you can't do it on a whiteboard, you can't do it in lazytask.
+Auto-memory, agent swarms, multi-tool orchestration: powerful for some, overkill for many. lazytask takes the opposite approach. Plain markdown files on disk. Readable by `grep`, diffable in git. No sync, no server, no database. AI as a 10x exoskeleton, not a swarm.
+
+> **Sophisticated simplicity**: if you can't do it on a whiteboard, you can't do it in lazytask.
+
+### 🔁 Learnings are enforced, not lost
+
+Most agents finish a task and move on. Nothing is retained. lazytask requires a learning with every completion: what surprised, what broke, what to do differently. These accumulate until *you* decide it's time to review them. No opaque auto-memory. You trigger the learning cycle, and your agent distills insights into concrete improvements to docs, workflows, or code.
+
+### 🪤 Bugs don't slip through the cracks
+
+Your agent spots a bug while working on something else. Without a place to put it, that bug vanishes. lazytask gives agents a `create` command, so side-findings become tracked tasks instead of forgotten context.
+
+### 🎛️ AI-first, human in control
+
+Agents get a strict CLI with JSON envelopes. You get a keyboard-driven TUI. Same storage, same rules. Stay on top of every task, or let the agent drive. Your call.
 
 ## How it works
 
@@ -38,7 +48,7 @@ lazytask has two interfaces that share the same storage:
 | **Launch** | `lt` | `lt list`, `lt create`, ... |
 | **Workflow** | Navigate, create, move tasks | Create, start, complete tasks with learnings |
 
-Tasks flow through directories — what you see in your file tree *is* the state:
+Tasks flow through directories. What you see in your file tree *is* the state:
 
 ```sh
 .tasks/
@@ -46,20 +56,20 @@ Tasks flow through directories — what you see in your file tree *is* the state
 ├── in-progress/    # up to 3 tasks (focus!) (configurable)
 ├── done/           # completed work
 ├── discard/        # intentionally excluded
-└── LEARNINGS.md    # Required learnings from each completed task
+└── LEARNINGS.md    # required learnings from each completed task
 ```
 
 Each task is a single `.md` file. Moving a task from `todo` to `in-progress` is literally moving a file.
 
-> `.tasks` can be included in git, but I'd discourage it. `lazytask` tasks are meant to be post-its next to you on your desk.
+**The feedback loop:** agents do work → record learnings → you trigger review → agents distill insights → better code.
 
-## No learning? No completion.
+> `.tasks` can be included in git, but we'd discourage it. lazytask tasks are meant to be post-its next to you on your desk.
 
-Most agents finish a task and forget everything. lazytask won't let them.
+<div align="center">
 
-When an agent completes a task, it must record a **learning** — what worked, what surprised it, what to do differently. These learnings accumulate in `LEARNINGS.md`. When enough have built up, you prompt your agent that it's time to learn, and it distills those insights into concrete improvements to docs, workflows, or code — with you in control. No opaque auto-memory.
+![lazytask TUI demo](docs/assets/lazytask_recording.gif)
 
-**The feedback loop:** agents do work → record learnings → you trigger learning → agents distill insights → better code.
+</div>
 
 ## Getting started
 
@@ -75,7 +85,7 @@ lt init --upgrade  # refreshes generated config + agent guidance defaults
 lt         # opens the TUI
 ```
 
-`lt init` also appends usage instructions to your `AGENTS.md` (or `CLAUDE.md`), so your AI agent knows how to use `lt` immediately.  
+`lt init` also appends usage instructions to your `AGENTS.md` (or `CLAUDE.md`), so your AI agent knows how to use `lt` immediately.
 Use `lt init --upgrade` after installing a new lazytask version to refresh generated defaults without overwriting `.tasks/`.
 
 ## Commands
