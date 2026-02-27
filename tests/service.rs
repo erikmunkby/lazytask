@@ -1,6 +1,6 @@
-use lt::config::load_for_workspace_root;
-use lt::domain::{TaskStatus, TaskType};
-use lt::services::{CreateTaskInput, ServiceError, TaskService};
+use lazytask::config::load_for_workspace_root;
+use lazytask::domain::{TaskStatus, TaskType};
+use lazytask::services::{CreateTaskInput, ServiceError, TaskService};
 use std::fs;
 use std::path::Path;
 use tempfile::TempDir;
