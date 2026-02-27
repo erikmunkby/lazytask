@@ -9,7 +9,7 @@ permissions:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-release:
@@ -71,7 +71,6 @@ jobs:
         run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: 🧪 Smoke test
-        if: matrix.target != 'x86_64-apple-darwin'
         shell: bash
         run: |
           if [[ "${{ matrix.target }}" == *windows* ]]; then
