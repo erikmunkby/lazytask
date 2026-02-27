@@ -2,6 +2,12 @@
 name = "lt"
 version = "0.1.0"
 edition = "2024"
+description = "A task manager built for AI coding agents — plain markdown files, strict CLI, keyboard-driven TUI"
+license = "MIT"
+repository = "https://github.com/erikmunkby/lazytask"
+readme = "README.md"
+keywords = ["task-manager", "cli", "tui", "ai-agents", "productivity"]
+categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
 anyhow = "1.0"

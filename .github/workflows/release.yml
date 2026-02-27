@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   build-release:
-    name: 📋 Build release
+    name: 📋 Release Please
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -30,13 +30,29 @@ jobs:
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
 
-  upload-artifacts:
-    name: 📦 Upload artifacts
-    runs-on: ubuntu-latest
+  build-artifacts:
+    name: 📦 Build ${{ matrix.target }}
     needs: [build-release]
     if: needs.build-release.outputs.release_created == 'true'
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+            ext: tar.gz
+          - target: x86_64-apple-darwin
+            runner: macos-15-intel
+            ext: tar.gz
+          - target: aarch64-apple-darwin
+            runner: macos-latest
+            ext: tar.gz
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
+            ext: zip
+    runs-on: ${{ matrix.runner }}
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -44,26 +60,86 @@ jobs:
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
         with:
           toolchain: 1.93.1
+          targets: ${{ matrix.target }}
 
       - name: 🗂️ Cache Rust artifacts
         uses: swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+        with:
+          key: ${{ matrix.target }}
 
       - name: 🔨 Build release binary
-        run: cargo build --release --locked
+        run: cargo build --release --locked --target ${{ matrix.target }}
 
-      - name: 📦 Package binary artifact
+      - name: 🧪 Smoke test
+        if: matrix.target != 'x86_64-apple-darwin'
+        shell: bash
         run: |
-          mkdir -p dist
-          BIN_NAME="lt"
-          ARCH="$(uname -m)"
-          ASSET_NAME="${BIN_NAME}-${{ runner.os }}-${ARCH}-${{ needs.build-release.outputs.tag_name }}.tar.gz"
-          tar -czf "dist/${ASSET_NAME}" -C target/release "${BIN_NAME}"
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            ./target/${{ matrix.target }}/release/lt.exe --version
+          else
+            ./target/${{ matrix.target }}/release/lt --version
+          fi
 
-      - name: ⬆️ Upload artifacts to GitHub Release
+      - name: 📦 Package artifact (unix)
+        id: package-unix
+        if: matrix.ext == 'tar.gz'
+        run: |
+          ASSET="lt-${{ matrix.target }}-${{ needs.build-release.outputs.tag_name }}.tar.gz"
+          tar -czf "${ASSET}" -C target/${{ matrix.target }}/release lt
+          echo "asset=${ASSET}" >> "$GITHUB_OUTPUT"
+
+      - name: 📦 Package artifact (windows)
+        id: package-windows
+        if: matrix.ext == 'zip'
+        shell: bash
+        run: |
+          ASSET="lt-${{ matrix.target }}-${{ needs.build-release.outputs.tag_name }}.zip"
+          7z a "${ASSET}" ./target/${{ matrix.target }}/release/lt.exe
+          echo "asset=${ASSET}" >> "$GITHUB_OUTPUT"
+
+      - name: ⬆️ Upload build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ matrix.target }}
+          path: ${{ steps.package-unix.outputs.asset || steps.package-windows.outputs.asset }}
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-release:
+    name: 🚢 Publish release
+    needs: [build-release, build-artifacts]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: 📥 Download all artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: artifacts
+
+      - name: 🔐 Generate checksums
+        run: |
+          cd artifacts
+          find . -type f \( -name '*.tar.gz' -o -name '*.zip' \) -exec mv {} . \;
+          find . -type d -empty -delete
+          sha256sum *.tar.gz *.zip > SHA256SUMS
+          echo "--- SHA256SUMS ---"
+          cat SHA256SUMS
+
+      - name: 🔏 Attest build provenance
+        uses: actions/attest-build-provenance@db473fddc028af60658334401dc6fa3ffd8669fd # v2
+        with:
+          subject-path: "artifacts/*"
+
+      - name: ⬆️ Upload assets to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.build-release.outputs.tag_name }}
         run: |
-          for f in dist/*; do
-            echo "Uploading $f"
-            gh release upload "${{ needs.build-release.outputs.tag_name }}" "$f"
+          cd artifacts
+          for f in *.tar.gz *.zip SHA256SUMS; do
+            echo "Uploading ${f}"
+            gh release upload "${TAG}" "${f}" --repo "${{ github.repository }}"
           done
