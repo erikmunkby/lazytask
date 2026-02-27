@@ -129,7 +129,9 @@ mod tests {
     #[test]
     fn localizes_preview_timestamps() {
         let rendered = display_metadata_value("created", "2026-02-22T06:30:45Z");
-        assert!(!rendered.contains('T'));
+        // Check the date-time portion only — the timezone label may contain 'T' (e.g. "UTC").
+        let datetime_part = &rendered[..19]; // "YYYY-MM-DD HH:MM:SS"
+        assert!(!datetime_part.contains('T'));
         assert!(!rendered.ends_with('Z'));
     }
 
