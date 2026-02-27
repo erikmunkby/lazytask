@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions
+    url: https://github.com/erikmunkby/lazytask/discussions
+    about: Ask questions, share ideas, or show what you've built
