@@ -20,13 +20,16 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: 🐍 Install gitlint
         run: pip install gitlint
 
       - name: 📝 Lint commit messages
-        run: gitlint --commits "origin/${{ github.base_ref }}..HEAD"
+        run: |
+          MERGE_BASE=$(git merge-base origin/${{ github.base_ref }} HEAD)
+          gitlint --commits "${MERGE_BASE}..HEAD"
 
   lint:
     name: 🔍 Lint
