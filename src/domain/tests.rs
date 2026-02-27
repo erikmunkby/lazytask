@@ -57,7 +57,11 @@ fn formats_local_human_without_rfc3339_markers() {
     let ts = Utc.with_ymd_and_hms(2026, 2, 22, 6, 30, 45).unwrap();
     let formatted = format_local_human(ts);
 
-    assert!(!formatted.contains('T'));
+    // The date-time portion must not use RFC3339 'T' separator or trailing 'Z'.
+    // Extract the timestamp part (before the timezone label) to avoid false
+    // positives when the timezone label itself contains 'T' (e.g. "UTC").
+    let datetime_part = &formatted[..19]; // "YYYY-MM-DD HH:MM:SS"
+    assert!(!datetime_part.contains('T'));
     assert!(!formatted.ends_with('Z'));
     assert!(formatted.contains(' '));
     assert!(formatted.contains(':'));
