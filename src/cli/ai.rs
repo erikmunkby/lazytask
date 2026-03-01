@@ -1,15 +1,15 @@
 use super::command::{Commands, TaskData};
 use crate::config::{AppConfig, markdown_for_key};
-use crate::domain::{Task, TaskStatus, format_relative};
+use crate::domain::{Task, TaskStatus, TaskType, format_relative};
 use crate::services::{CreateTaskInput, ServiceError, TaskService};
 use serde_json::{Value, json};
 
-/// Runs one AI-facing command and returns JSON-ready payload plus optional hint text.
+/// Runs one AI-facing command and returns a JSON-ready payload.
 pub(super) fn run_ai_command(
     service: &TaskService,
     config: &AppConfig,
     command: Commands,
-) -> Result<(Value, Option<String>), ServiceError> {
+) -> Result<Value, ServiceError> {
     match command {
         Commands::Init { .. } => unreachable!("init is handled before AI dispatch"),
         Commands::List {
@@ -22,31 +22,36 @@ pub(super) fn run_ai_command(
             } else {
                 vec![TaskStatus::Todo, TaskStatus::InProgress]
             };
-            let tasks = statuses
-                .into_iter()
-                .map(|s| service.list_tasks(Some(s), task_type))
-                .collect::<Result<Vec<_>, _>>()?
-                .into_iter()
-                .flatten()
-                .map(|task| {
-                    json!({
-                        "title": task.title,
-                        "status": task.status,
-                        "type": task.task_type,
-                        "updated": format_relative(task.updated_at, now)
-                    })
-                })
-                .collect::<Vec<_>>();
-            Ok((json!({ "tasks": tasks }), None))
+
+            let mut result = json!({});
+            for status in &statuses {
+                let tasks = service.list_tasks(Some(*status), task_type)?;
+                let mut by_type = json!({});
+                for tt in &[TaskType::Task, TaskType::Bug] {
+                    let items: Vec<Value> = tasks
+                        .iter()
+                        .filter(|t| t.task_type == *tt)
+                        .map(|t| {
+                            json!({
+                                "title": t.title,
+                                "updated": format_relative(t.updated_at, now)
+                            })
+                        })
+                        .collect();
+                    by_type[tt.as_str()] = json!(items);
+                }
+                result[status.as_str()] = by_type;
+            }
+            Ok(result)
         }
         Commands::Get { query } => {
             let now = chrono::Utc::now();
-            let tasks = service
+            let tasks: Vec<Value> = service
                 .get_tasks(&query)?
                 .iter()
-                .map(|task| to_task_data(task, now))
-                .collect::<Vec<_>>();
-            Ok((json!({ "tasks": tasks }), None))
+                .map(|task| serde_json::to_value(to_task_data(task, now)).unwrap())
+                .collect();
+            Ok(json!(tasks))
         }
         Commands::Create {
             title,
@@ -62,18 +67,19 @@ pub(super) fn run_ai_command(
                 start,
                 require_details: true,
             })?;
-            Ok((json!({ "task": to_task_data(&task, now) }), None))
+            Ok(serde_json::to_value(to_task_data(&task, now)).unwrap())
         }
         Commands::Start { query } => {
             let now = chrono::Utc::now();
             let task = service.start_task(&query)?;
-            Ok((json!({ "task": to_task_data(&task, now) }), None))
+            Ok(serde_json::to_value(to_task_data(&task, now)).unwrap())
         }
         Commands::Done { query, learning } => {
             let now = chrono::Utc::now();
             let task = service.done_task_with_learning(&query, &learning)?;
-            let hint = learnings_hint(service, config);
-            Ok((json!({ "task": to_task_data(&task, now) }), hint))
+            let mut data = to_task_data(&task, now);
+            data.hint = learnings_hint(service, config);
+            Ok(serde_json::to_value(data).unwrap())
         }
         Commands::Discard {
             query,
@@ -81,20 +87,20 @@ pub(super) fn run_ai_command(
         } => {
             let now = chrono::Utc::now();
             let task = service.discard_task_with_note(&query, &discard_note)?;
-            Ok((json!({ "task": to_task_data(&task, now) }), None))
+            Ok(serde_json::to_value(to_task_data(&task, now)).unwrap())
         }
         Commands::Delete { query } => {
             let now = chrono::Utc::now();
             let task = service.delete_task(&query)?;
-            Ok((json!({ "task": to_task_data(&task, now) }), None))
+            Ok(serde_json::to_value(to_task_data(&task, now)).unwrap())
         }
         Commands::Learn { finished } => {
             if finished {
                 service.learn_finished()?;
-                Ok((json!({ "learn": { "cleared": true } }), None))
+                Ok(json!({ "cleared": true }))
             } else {
                 let result = service.learn()?;
-                Ok((json!({ "learn": result }), None))
+                Ok(serde_json::to_value(result).unwrap())
             }
         }
     }
@@ -118,7 +124,7 @@ fn prompt_by_key(key: &str) -> Result<&'static str, ServiceError> {
         .ok_or_else(|| ServiceError::ParseError(format!("unknown prompt key: {key}")))
 }
 
-/// Converts a domain task into the API response shape used by JSON envelopes.
+/// Converts a domain task into the API response shape.
 fn to_task_data(task: &Task, now: chrono::DateTime<chrono::Utc>) -> TaskData {
     TaskData {
         title: task.title.clone(),
@@ -127,5 +133,6 @@ fn to_task_data(task: &Task, now: chrono::DateTime<chrono::Utc>) -> TaskData {
         discard_note: task.discard_note.clone(),
         details: task.details.clone(),
         updated: format_relative(task.updated_at, now),
+        hint: None,
     }
 }

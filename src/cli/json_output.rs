@@ -3,14 +3,6 @@ use serde::Serialize;
 use serde_json::{Value, json};
 
 #[derive(Debug, Serialize)]
-struct SuccessEnvelope<T: Serialize> {
-    ok: bool,
-    data: T,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    hint: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
 struct ErrorEnvelope {
     ok: bool,
     error: ErrorBody,
@@ -67,16 +59,11 @@ pub(super) fn wants_ai_json_error() -> bool {
     )
 }
 
-/// Prints a standard success envelope as one-line JSON.
-pub(super) fn print_json_success(data: Value, hint: Option<String>) {
-    let payload = SuccessEnvelope {
-        ok: true,
-        data,
-        hint,
-    };
+/// Prints a JSON value directly as one-line JSON.
+pub(super) fn print_json_success(data: Value) {
     println!(
         "{}",
-        serde_json::to_string(&payload).expect("failed to serialize success payload")
+        serde_json::to_string(&data).expect("failed to serialize success payload")
     );
 }
 
