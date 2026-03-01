@@ -249,7 +249,7 @@ fn runtime_cleanup_removes_expired_done_and_discard_before_list() {
     let payload = parse_json(&output.stdout);
 
     assert!(output.status.success());
-    let tasks = payload["data"]["tasks"].as_array().unwrap();
+    let tasks = payload["done"]["task"].as_array().unwrap();
     assert_eq!(tasks.len(), 1);
     assert_eq!(tasks[0]["title"], "Recent done");
     assert!(!temp.path().join(".tasks/done/expired-done.md").exists());
@@ -262,7 +262,7 @@ fn runtime_cleanup_removes_expired_done_and_discard_before_list() {
 }
 
 #[test]
-fn ai_create_and_list_returns_success_envelope() {
+fn ai_create_and_list_returns_flat_output() {
     let temp = TempDir::new().unwrap();
 
     let init = lt_command()
@@ -288,9 +288,8 @@ fn ai_create_and_list_returns_success_envelope() {
 
     let create_payload = parse_json(&create.stdout);
     assert!(create.status.success());
-    assert_eq!(create_payload["ok"], true);
-    assert_eq!(create_payload["data"]["task"]["status"], "todo");
-    let create_task = create_payload["data"]["task"].as_object().unwrap();
+    assert_eq!(create_payload["status"], "todo");
+    let create_task = create_payload.as_object().unwrap();
     assert!(!create_task.contains_key("file_name"));
     assert!(!create_task.contains_key("created"));
     assert!(!create_task.contains_key("created_relative"));
@@ -305,14 +304,40 @@ fn ai_create_and_list_returns_success_envelope() {
 
     let list_payload = parse_json(&list.stdout);
     assert!(list.status.success());
-    assert_eq!(list_payload["ok"], true);
-    assert_eq!(list_payload["data"]["tasks"].as_array().unwrap().len(), 1);
-    let listed_task = list_payload["data"]["tasks"][0].as_object().unwrap();
+    assert_eq!(list_payload["todo"]["task"].as_array().unwrap().len(), 1);
+    let listed_task = list_payload["todo"]["task"][0].as_object().unwrap();
     assert!(!listed_task.contains_key("file_name"));
     assert!(!listed_task.contains_key("created"));
     assert!(!listed_task.contains_key("created_relative"));
     assert!(!listed_task.contains_key("updated_relative"));
     assert!(!listed_task["updated"].as_str().unwrap().contains('T'));
+}
+
+#[test]
+fn ai_list_groups_by_status_and_type() {
+    let temp = init_temp();
+    create_task(&temp, "Write docs");
+    create_task_of_type(&temp, "Fix auth bug", "bug");
+
+    let list = lt_command()
+        .current_dir(temp.path())
+        .args(["list"])
+        .output()
+        .unwrap();
+    let payload = parse_json(&list.stdout);
+    assert!(list.status.success());
+
+    // Both statuses present
+    assert!(payload.get("todo").is_some());
+    assert!(payload.get("in-progress").is_some());
+    // No done without --show-done
+    assert!(payload.get("done").is_none());
+
+    // Tasks grouped by type
+    assert_eq!(payload["todo"]["task"].as_array().unwrap().len(), 1);
+    assert_eq!(payload["todo"]["bug"].as_array().unwrap().len(), 1);
+    assert_eq!(payload["todo"]["task"][0]["title"], "Write docs");
+    assert_eq!(payload["todo"]["bug"][0]["title"], "Fix auth bug");
 }
 
 #[test]
@@ -326,13 +351,11 @@ fn ai_list_can_filter_by_type() {
         .args(["list", "--type", "bug"])
         .output()
         .unwrap();
-    let by_type_payload = parse_json(&by_type.stdout);
+    let payload = parse_json(&by_type.stdout);
     assert!(by_type.status.success());
-    assert_eq!(
-        by_type_payload["data"]["tasks"].as_array().unwrap().len(),
-        1
-    );
-    assert_eq!(by_type_payload["data"]["tasks"][0]["title"], "Fix auth bug");
+    assert_eq!(payload["todo"]["bug"].as_array().unwrap().len(), 1);
+    assert_eq!(payload["todo"]["bug"][0]["title"], "Fix auth bug");
+    assert_eq!(payload["todo"]["task"].as_array().unwrap().len(), 0);
 }
 
 #[test]
@@ -372,8 +395,7 @@ fn ai_create_accepts_multiline_bullet_details() {
 
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
-    assert_eq!(payload["ok"], true);
-    assert_eq!(payload["data"]["task"]["details"], details);
+    assert_eq!(payload["details"], details);
 }
 
 #[test]
@@ -396,8 +418,7 @@ fn ai_create_normalizes_escaped_newlines_in_details() {
 
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
-    assert_eq!(payload["ok"], true);
-    assert_eq!(payload["data"]["task"]["details"], "- one\n- two");
+    assert_eq!(payload["details"], "- one\n- two");
 }
 
 #[test]
@@ -413,8 +434,7 @@ fn ai_get_returns_task() {
 
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
-    assert_eq!(payload["ok"], true);
-    assert_eq!(payload["data"]["tasks"][0]["title"], "Ship rust");
+    assert_eq!(payload[0]["title"], "Ship rust");
 }
 
 #[test]
@@ -430,7 +450,7 @@ fn ai_start_moves_to_in_progress() {
 
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
-    assert_eq!(payload["data"]["task"]["status"], "in-progress");
+    assert_eq!(payload["status"], "in-progress");
 }
 
 #[test]
@@ -452,7 +472,7 @@ fn ai_done_moves_to_done() {
 
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
-    assert_eq!(payload["data"]["task"]["status"], "done");
+    assert_eq!(payload["status"], "done");
 }
 
 #[test]
@@ -468,8 +488,8 @@ fn ai_discard_moves_to_discard_bucket_and_hides_from_list() {
 
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
-    assert_eq!(payload["data"]["task"]["status"], "discard");
-    assert_eq!(payload["data"]["task"]["discard_note"], "out of scope");
+    assert_eq!(payload["status"], "discard");
+    assert_eq!(payload["discard_note"], "out of scope");
     assert!(temp.path().join(".tasks/discard/ship-rust.md").exists());
 
     let list = lt_command()
@@ -478,7 +498,7 @@ fn ai_discard_moves_to_discard_bucket_and_hides_from_list() {
         .output()
         .unwrap();
     let list_payload = parse_json(&list.stdout);
-    assert_eq!(list_payload["data"]["tasks"].as_array().unwrap().len(), 0);
+    assert_eq!(list_payload["todo"]["task"].as_array().unwrap().len(), 0);
 }
 
 #[test]
@@ -525,7 +545,7 @@ fn ai_discard_create_same_title_succeeds() {
     let recreate_payload = parse_json(&recreate.stdout);
 
     assert!(recreate.status.success());
-    assert_eq!(recreate_payload["data"]["task"]["status"], "todo");
+    assert_eq!(recreate_payload["status"], "todo");
 }
 
 #[test]
@@ -560,7 +580,7 @@ fn ai_queries_ignore_discarded_duplicate() {
         .unwrap();
     let get_payload = parse_json(&get.stdout);
     assert!(get.status.success());
-    assert_eq!(get_payload["data"]["tasks"][0]["status"], "todo");
+    assert_eq!(get_payload[0]["status"], "todo");
 
     let start = lt_command()
         .current_dir(temp.path())
@@ -569,7 +589,7 @@ fn ai_queries_ignore_discarded_duplicate() {
         .unwrap();
     let start_payload = parse_json(&start.stdout);
     assert!(start.status.success());
-    assert_eq!(start_payload["data"]["task"]["status"], "in-progress");
+    assert_eq!(start_payload["status"], "in-progress");
 
     let done = lt_command()
         .current_dir(temp.path())
@@ -578,7 +598,7 @@ fn ai_queries_ignore_discarded_duplicate() {
         .unwrap();
     let done_payload = parse_json(&done.stdout);
     assert!(done.status.success());
-    assert_eq!(done_payload["data"]["task"]["status"], "done");
+    assert_eq!(done_payload["status"], "done");
 }
 
 #[test]
@@ -638,10 +658,7 @@ fn ai_discard_note_validates_length_and_allows_multiline() {
         .unwrap();
     let ok_payload = parse_json(&ok.stdout);
     assert!(ok.status.success());
-    assert_eq!(
-        ok_payload["data"]["task"]["discard_note"],
-        "line one\nline two"
-    );
+    assert_eq!(ok_payload["discard_note"], "line one\nline two");
 }
 
 #[test]
@@ -695,9 +712,7 @@ fn ai_done_normalizes_escaped_newlines_in_learning() {
     let payload = parse_json(&learn.stdout);
     assert!(learn.status.success());
 
-    let learnings = payload["data"]["learn"]["entries"][0]["learnings"]
-        .as_str()
-        .unwrap();
+    let learnings = payload["entries"][0]["learnings"].as_str().unwrap();
     assert_eq!(learnings, "first\nsecond");
 }
 
@@ -725,9 +740,11 @@ fn ai_list_defaults_to_active_tasks_only() {
         .unwrap();
     let payload = parse_json(&list.stdout);
     assert!(list.status.success());
-    let tasks = payload["data"]["tasks"].as_array().unwrap();
+    let tasks = payload["todo"]["task"].as_array().unwrap();
     assert_eq!(tasks.len(), 1);
     assert_eq!(tasks[0]["title"], "Todo task");
+    // No done bucket without --show-done
+    assert!(payload.get("done").is_none());
 }
 
 #[test]
@@ -754,8 +771,9 @@ fn ai_list_show_done_includes_completed_tasks() {
         .unwrap();
     let payload = parse_json(&list.stdout);
     assert!(list.status.success());
-    let tasks = payload["data"]["tasks"].as_array().unwrap();
-    assert_eq!(tasks.len(), 2);
+    // todo has 1 task, done has 1 task
+    assert_eq!(payload["todo"]["task"].as_array().unwrap().len(), 1);
+    assert_eq!(payload["done"]["task"].as_array().unwrap().len(), 1);
 }
 
 #[test]
@@ -771,7 +789,7 @@ fn ai_delete_removes_task() {
 
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
-    assert_eq!(payload["data"]["task"]["title"], "Ship rust");
+    assert_eq!(payload["title"], "Ship rust");
 
     let list = lt_command()
         .current_dir(temp.path())
@@ -779,7 +797,7 @@ fn ai_delete_removes_task() {
         .output()
         .unwrap();
     let list_payload = parse_json(&list.stdout);
-    assert_eq!(list_payload["data"]["tasks"].as_array().unwrap().len(), 0);
+    assert_eq!(list_payload["todo"]["task"].as_array().unwrap().len(), 0);
 }
 
 #[test]
@@ -807,27 +825,15 @@ fn ai_learn_returns_entries() {
 
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
-    assert_eq!(
-        payload["data"]["learn"]["entries"]
-            .as_array()
-            .unwrap()
-            .len(),
-        1
-    );
-    assert_eq!(payload["data"]["learn"]["entries"][0]["title"], "Ship rust");
-    let date = payload["data"]["learn"]["entries"][0]["date"]
-        .as_str()
-        .unwrap();
+    assert_eq!(payload["entries"].as_array().unwrap().len(), 1);
+    assert_eq!(payload["entries"][0]["title"], "Ship rust");
+    let date = payload["entries"][0]["date"].as_str().unwrap();
     assert_eq!(date.len(), 10);
     assert_eq!(date.chars().filter(|c| *c == '-').count(), 2);
     assert!(!date.contains('T'));
-    assert_eq!(
-        payload["data"]["learn"]["entries"][0]["learnings"],
-        "learned something"
-    );
-    let instructions = payload["data"]["learn"]["instructions"].as_str().unwrap();
+    assert_eq!(payload["entries"][0]["learnings"], "learned something");
+    let instructions = payload["instructions"].as_str().unwrap();
     assert!(!instructions.is_empty());
-    assert!(payload.get("hint").is_none());
 
     // --finished clears learnings
     let finished = lt_command()
@@ -838,7 +844,7 @@ fn ai_learn_returns_entries() {
 
     let finished_payload = parse_json(&finished.stdout);
     assert!(finished.status.success());
-    assert_eq!(finished_payload["data"]["learn"]["cleared"], true);
+    assert_eq!(finished_payload["cleared"], true);
 
     // learn after finished returns empty
     let empty = lt_command()
@@ -849,13 +855,7 @@ fn ai_learn_returns_entries() {
 
     let empty_payload = parse_json(&empty.stdout);
     assert!(empty.status.success());
-    assert_eq!(
-        empty_payload["data"]["learn"]["entries"]
-            .as_array()
-            .unwrap()
-            .len(),
-        0
-    );
+    assert_eq!(empty_payload["entries"].as_array().unwrap().len(), 0);
 }
 
 #[test]

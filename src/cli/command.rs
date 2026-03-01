@@ -67,4 +67,6 @@ pub(super) struct TaskData {
     pub discard_note: Option<String>,
     pub details: String,
     pub updated: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hint: Option<String>,
 }

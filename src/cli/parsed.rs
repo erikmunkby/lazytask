@@ -53,8 +53,8 @@ pub(super) fn run_parsed(cli: Cli) -> Result<()> {
             };
 
             match run_ai_command(&runtime.service, &runtime.config, command) {
-                Ok((data, hint)) => {
-                    print_json_success(data, hint);
+                Ok(data) => {
+                    print_json_success(data);
                     Ok(())
                 }
                 Err(err) => {
