@@ -192,6 +192,13 @@ impl App {
             }
             Action::TaskOperationSucceeded { message } => self.push_log(message, false),
             Action::TaskOperationFailed { message } => self.push_log(message, true),
+            Action::UpdateAvailable { version } => self.push_log(
+                format!(
+                    "update available: v{version} (current: v{})",
+                    env!("CARGO_PKG_VERSION")
+                ),
+                false,
+            ),
             Action::Quit => self.state.should_quit = true,
         }
     }

@@ -2,6 +2,7 @@ pub mod actions;
 pub mod app;
 pub mod components;
 pub mod render;
+mod update_check;
 
 use crate::services::TaskService;
 use anyhow::Result;
@@ -24,9 +25,14 @@ pub fn run(service: TaskService, learn_threshold: usize) -> Result<()> {
     let mut app = App::new(service, learn_threshold);
     app.dispatch(actions::Action::RefreshTasks);
     app.dispatch(actions::Action::CheckLearningHint);
+    let update_rx = update_check::spawn_update_check();
 
     while !app.state.should_quit {
         guard.terminal.draw(|frame| render(frame, &app.state))?;
+
+        if let Ok(version) = update_rx.try_recv() {
+            app.dispatch(actions::Action::UpdateAvailable { version });
+        }
 
         if event::poll(Duration::from_millis(200))?
             && let Event::Key(key) = event::read()?

@@ -30,6 +30,9 @@ pub enum Action {
     TaskOperationFailed {
         message: String,
     },
+    UpdateAvailable {
+        version: String,
+    },
     Quit,
 }
 
