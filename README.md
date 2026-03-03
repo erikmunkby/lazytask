@@ -26,9 +26,9 @@ Auto-memory, agent swarms, multi-tool orchestration: powerful for some, overkill
 
 > **Sophisticated simplicity**: if you can't do it on a whiteboard, you can't do it in lazytask.
 
-### 🔁 Learnings are enforced, not lost
+### 🔁 Learnings are prompted, not lost
 
-Most agents finish a task and move on. Nothing is retained. lazytask requires a learning with every completion: what surprised, what broke, what to do differently. These accumulate until *you* decide it's time to review them. No opaque auto-memory. You trigger the learning cycle, and your agent distills insights into concrete improvements to docs, workflows, or code.
+Most agents finish a task and move on. Nothing is retained. lazytask prompts reflection after every completion: what surprised, what broke, what to do differently. Learnings accumulate until *you* decide it's time to review them. No opaque auto-memory. You trigger the learning cycle, and your agent distills insights into concrete improvements to docs, workflows, or code.
 
 ### 🪤 Bugs don't slip through the cracks
 
@@ -46,7 +46,7 @@ lazytask has two interfaces that share the same storage:
 |---|---|---|
 | **Interface** | Keyboard-driven TUI | Strict CLI with JSON envelopes |
 | **Launch** | `lt` | `lt list`, `lt create`, ... |
-| **Workflow** | Navigate, create, move tasks | Create, start, complete tasks with learnings |
+| **Workflow** | Navigate, create, move tasks | Create, start, complete tasks, capture learnings |
 
 Tasks flow through directories. What you see in your file tree *is* the state:
 
@@ -56,7 +56,7 @@ Tasks flow through directories. What you see in your file tree *is* the state:
 ├── in-progress/    # up to 3 tasks (focus!) (configurable)
 ├── done/           # completed work
 ├── discard/        # intentionally excluded
-└── LEARNINGS.md    # required learnings from each completed task
+└── LEARNINGS.md    # learnings captured after task completion
 ```
 
 Each task is a single `.md` file. Moving a task from `todo` to `in-progress` is literally moving a file.
@@ -108,9 +108,10 @@ All AI commands return a consistent JSON envelope: `{"ok": bool, "data": ...}` o
 | `lt get <query>...` | Get task details |
 | `lt create --title '...' --type task\|bug --details '...' [--start]` | Create a task |
 | `lt start <query>` | Move task to in-progress |
-| `lt done <query> --learning '...'` | Complete task with a learning |
+| `lt done <query>` | Complete task (returns reflection prompt) |
 | `lt discard <query> --discard-note '...'` | Discard a task |
-| `lt learn` | Distill learnings into improvements |
+| `lt learn <query> --learning '...'` | Record a learning for a done task |
+| `lt learn --review` | Distill learnings into improvements |
 
 ## Configuration
 
