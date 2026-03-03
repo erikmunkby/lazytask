@@ -29,10 +29,13 @@ fn service_lifecycle_and_learn_finished() {
     let started = service.start_task("service-task").unwrap();
     assert_eq!(started.status, TaskStatus::InProgress);
 
-    let done = service
-        .done_task_with_learning("service-task", "line one\nline two")
-        .unwrap();
+    let done = service.done_task_without_learning("service-task").unwrap();
     assert_eq!(done.status, TaskStatus::Done);
+
+    // add learning for the completed task
+    service
+        .add_learning_for_done_task("service-task", "line one\nline two")
+        .unwrap();
 
     // learn returns all entries
     let first = service.learn().unwrap();

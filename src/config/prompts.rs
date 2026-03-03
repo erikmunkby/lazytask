@@ -1,4 +1,5 @@
 const AGENT_INIT_PROMPT: &str = include_str!("prompts/agent_init.md");
+const DONE_REFLECTION_MARKDOWN: &str = include_str!("prompts/done_reflection.md");
 const LEARN_INSTRUCTIONS_MARKDOWN: &str = include_str!("prompts/learn_instructions.md");
 const LEARN_THRESHOLD_HINT_MARKDOWN: &str = include_str!("prompts/learn_threshold_hint.md");
 
@@ -8,6 +9,8 @@ pub struct PromptConfig {
     pub agent_init_path: &'static str,
     pub learn_instructions_key: &'static str,
     pub learn_instructions_path: &'static str,
+    pub done_reflection_key: &'static str,
+    pub done_reflection_path: &'static str,
     pub learn_threshold_hint_key: &'static str,
     pub learn_threshold_hint_path: &'static str,
     pub important_block_start: &'static str,
@@ -19,6 +22,8 @@ pub const DEFAULT_PROMPT_CONFIG: PromptConfig = PromptConfig {
     agent_init_path: "src/config/prompts/agent_init.md",
     learn_instructions_key: "learn_instructions",
     learn_instructions_path: "src/config/prompts/learn_instructions.md",
+    done_reflection_key: "done_reflection",
+    done_reflection_path: "src/config/prompts/done_reflection.md",
     learn_threshold_hint_key: "learn_threshold_hint",
     learn_threshold_hint_path: "src/config/prompts/learn_threshold_hint.md",
     important_block_start: "<EXTREMELY_IMPORTANT>",
@@ -29,6 +34,7 @@ pub const DEFAULT_PROMPT_CONFIG: PromptConfig = PromptConfig {
 pub fn markdown_for_key(key: &str) -> Option<&'static str> {
     match key {
         "agent_init" => Some(prompt_body(AGENT_INIT_PROMPT)),
+        "done_reflection" => Some(prompt_body(DONE_REFLECTION_MARKDOWN)),
         "learn_instructions" => Some(prompt_body(LEARN_INSTRUCTIONS_MARKDOWN)),
         "learn_threshold_hint" => Some(prompt_body(LEARN_THRESHOLD_HINT_MARKDOWN)),
         _ => None,
@@ -59,6 +65,7 @@ mod tests {
     fn prompt_assets_include_metadata_comment() {
         for prompt in [
             AGENT_INIT_PROMPT,
+            DONE_REFLECTION_MARKDOWN,
             LEARN_INSTRUCTIONS_MARKDOWN,
             LEARN_THRESHOLD_HINT_MARKDOWN,
         ] {
@@ -75,7 +82,12 @@ mod tests {
 
     #[test]
     fn markdown_for_key_returns_only_prompt_body() {
-        for key in ["agent_init", "learn_instructions", "learn_threshold_hint"] {
+        for key in [
+            "agent_init",
+            "done_reflection",
+            "learn_instructions",
+            "learn_threshold_hint",
+        ] {
             let prompt = markdown_for_key(key).unwrap();
             assert!(!prompt.starts_with("<!--"));
             assert!(!prompt.contains("<!--"));

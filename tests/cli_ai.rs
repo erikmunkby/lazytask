@@ -220,7 +220,7 @@ fn runtime_cleanup_removes_expired_done_and_discard_before_list() {
     create_task(&temp, "Recent done");
     lt_command()
         .current_dir(temp.path())
-        .args(["done", "Recent done", "--learning", "learning"])
+        .args(["done", "Recent done"])
         .output()
         .unwrap();
 
@@ -466,13 +466,16 @@ fn ai_done_moves_to_done() {
 
     let output = lt_command()
         .current_dir(temp.path())
-        .args(["done", "Ship rust", "--learning", "learned something"])
+        .args(["done", "Ship rust"])
         .output()
         .unwrap();
 
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
     assert_eq!(payload["status"], "done");
+    let next_step = payload["next_step"].as_str().unwrap();
+    assert!(!next_step.is_empty());
+    assert!(next_step.contains("reflect"));
 }
 
 #[test]
@@ -593,7 +596,7 @@ fn ai_queries_ignore_discarded_duplicate() {
 
     let done = lt_command()
         .current_dir(temp.path())
-        .args(["done", "Ship rust", "--learning", "learned"])
+        .args(["done", "Ship rust"])
         .output()
         .unwrap();
     let done_payload = parse_json(&done.stdout);
@@ -662,7 +665,7 @@ fn ai_discard_note_validates_length_and_allows_multiline() {
 }
 
 #[test]
-fn ai_done_hint_threshold_uses_config_value() {
+fn ai_learn_hint_threshold_uses_config_value() {
     let temp = init_temp();
     create_task(&temp, "Ship rust");
 
@@ -672,22 +675,27 @@ fn ai_done_hint_threshold_uses_config_value() {
     )
     .unwrap();
 
+    lt_command()
+        .current_dir(temp.path())
+        .args(["done", "Ship rust"])
+        .output()
+        .unwrap();
+
     let output = lt_command()
         .current_dir(temp.path())
-        .args(["done", "Ship rust", "--learning", "learned something"])
+        .args(["learn", "Ship rust", "--learning", "learned something"])
         .output()
         .unwrap();
 
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
-    let hint = payload["hint"].as_str().unwrap();
-    assert!(hint.contains("Time to learn!"));
-    assert!(hint.contains("learning session"));
-    assert!(!hint.contains(".tasks/LEARNINGS.md has"));
+    let next_step = payload["next_step"].as_str().unwrap();
+    assert!(next_step.contains("Time to learn!"));
+    assert!(next_step.contains("learning review"));
 }
 
 #[test]
-fn ai_done_normalizes_escaped_newlines_in_learning() {
+fn ai_learn_normalizes_escaped_newlines_in_learning() {
     let temp = init_temp();
     create_task(&temp, "Ship rust");
 
@@ -697,20 +705,26 @@ fn ai_done_normalizes_escaped_newlines_in_learning() {
         .output()
         .unwrap();
 
-    let done = lt_command()
+    lt_command()
         .current_dir(temp.path())
-        .args(["done", "Ship rust", "--learning", "first\\nsecond"])
+        .args(["done", "Ship rust"])
         .output()
         .unwrap();
-    assert!(done.status.success());
 
-    let learn = lt_command()
+    let learn_add = lt_command()
         .current_dir(temp.path())
-        .args(["learn"])
+        .args(["learn", "Ship rust", "--learning", "first\\nsecond"])
         .output()
         .unwrap();
-    let payload = parse_json(&learn.stdout);
-    assert!(learn.status.success());
+    assert!(learn_add.status.success());
+
+    let learn_review = lt_command()
+        .current_dir(temp.path())
+        .args(["learn", "--review"])
+        .output()
+        .unwrap();
+    let payload = parse_json(&learn_review.stdout);
+    assert!(learn_review.status.success());
 
     let learnings = payload["entries"][0]["learnings"].as_str().unwrap();
     assert_eq!(learnings, "first\nsecond");
@@ -729,7 +743,7 @@ fn ai_list_defaults_to_active_tasks_only() {
         .unwrap();
     lt_command()
         .current_dir(temp.path())
-        .args(["done", "Done task", "--learning", "learned"])
+        .args(["done", "Done task"])
         .output()
         .unwrap();
 
@@ -760,7 +774,7 @@ fn ai_list_show_done_includes_completed_tasks() {
         .unwrap();
     lt_command()
         .current_dir(temp.path())
-        .args(["done", "Done task", "--learning", "learned"])
+        .args(["done", "Done task"])
         .output()
         .unwrap();
 
@@ -813,13 +827,22 @@ fn ai_learn_returns_entries() {
 
     lt_command()
         .current_dir(temp.path())
-        .args(["done", "Ship rust", "--learning", "learned something"])
+        .args(["done", "Ship rust"])
         .output()
         .unwrap();
 
+    // add learning via learn command
+    let learn_add = lt_command()
+        .current_dir(temp.path())
+        .args(["learn", "Ship rust", "--learning", "learned something"])
+        .output()
+        .unwrap();
+    assert!(learn_add.status.success());
+
+    // review learnings
     let output = lt_command()
         .current_dir(temp.path())
-        .args(["learn"])
+        .args(["learn", "--review"])
         .output()
         .unwrap();
 
@@ -846,10 +869,10 @@ fn ai_learn_returns_entries() {
     assert!(finished.status.success());
     assert_eq!(finished_payload["cleared"], true);
 
-    // learn after finished returns empty
+    // learn --review after finished returns empty
     let empty = lt_command()
         .current_dir(temp.path())
-        .args(["learn"])
+        .args(["learn", "--review"])
         .output()
         .unwrap();
 
@@ -912,4 +935,41 @@ fn ai_create_duplicate_returns_error() {
     let payload = parse_json(&output.stdout);
     assert!(!output.status.success());
     assert_eq!(payload["error"]["code"], "task_already_exists");
+}
+
+#[test]
+fn ai_learn_validates_task_must_be_done() {
+    let temp = init_temp();
+    create_task(&temp, "Ship rust");
+
+    lt_command()
+        .current_dir(temp.path())
+        .args(["start", "Ship rust"])
+        .output()
+        .unwrap();
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .args(["learn", "Ship rust", "--learning", "some learning"])
+        .output()
+        .unwrap();
+
+    let payload = parse_json(&output.stdout);
+    assert!(!output.status.success());
+    assert_eq!(payload["error"]["code"], "validation_error");
+}
+
+#[test]
+fn ai_bare_learn_returns_validation_error() {
+    let temp = init_temp();
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .args(["learn"])
+        .output()
+        .unwrap();
+
+    let payload = parse_json(&output.stdout);
+    assert!(!output.status.success());
+    assert_eq!(payload["error"]["code"], "validation_error");
 }

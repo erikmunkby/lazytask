@@ -74,11 +74,13 @@ pub(super) fn run_ai_command(
             let task = service.start_task(&query)?;
             Ok(serde_json::to_value(to_task_data(&task, now)).unwrap())
         }
-        Commands::Done { query, learning } => {
+        Commands::Done { query } => {
             let now = chrono::Utc::now();
-            let task = service.done_task_with_learning(&query, &learning)?;
+            let task = service.done_task_without_learning(&query)?;
             let mut data = to_task_data(&task, now);
-            data.hint = learnings_hint(service, config);
+            data.next_step = prompt_by_key(config.prompts.done_reflection_key)
+                .ok()
+                .map(str::to_string);
             Ok(serde_json::to_value(data).unwrap())
         }
         Commands::Discard {
@@ -94,15 +96,31 @@ pub(super) fn run_ai_command(
             let task = service.delete_task(&query)?;
             Ok(serde_json::to_value(to_task_data(&task, now)).unwrap())
         }
-        Commands::Learn { finished } => {
-            if finished {
-                service.learn_finished()?;
-                Ok(json!({ "cleared": true }))
-            } else {
+        Commands::Learn {
+            query,
+            learning,
+            review,
+            finished,
+        } => match (query, learning, review, finished) {
+            (Some(q), Some(l), false, false) => {
+                let now = chrono::Utc::now();
+                let task = service.add_learning_for_done_task(&q, &l)?;
+                let mut data = to_task_data(&task, now);
+                data.next_step = learnings_hint(service, config);
+                Ok(serde_json::to_value(data).unwrap())
+            }
+            (None, None, true, false) => {
                 let result = service.learn()?;
                 Ok(serde_json::to_value(result).unwrap())
             }
-        }
+            (None, None, false, true) => {
+                service.learn_finished()?;
+                Ok(json!({ "cleared": true }))
+            }
+            _ => Err(ServiceError::ValidationError(
+                "usage: lt learn '<title>' --learning '<text>' | lt learn --review | lt learn --finished".to_string(),
+            )),
+        },
     }
 }
 
@@ -133,6 +151,6 @@ fn to_task_data(task: &Task, now: chrono::DateTime<chrono::Utc>) -> TaskData {
         discard_note: task.discard_note.clone(),
         details: task.details.clone(),
         updated: format_relative(task.updated_at, now),
-        hint: None,
+        next_step: None,
     }
 }
