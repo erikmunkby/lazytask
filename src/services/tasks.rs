@@ -1,9 +1,10 @@
+use super::errors::validation_error;
 use super::query::resolve_query;
 use super::{CreateTaskInput, ServiceError, TaskService};
 use crate::config;
 use crate::domain::{
-    DomainError, Task, TaskStatus, normalize_escaped_newlines, normalize_file_name,
-    parse_learning_lines, validate_details, validate_discard_note, validate_title,
+    Task, TaskStatus, normalize_escaped_newlines, normalize_file_name, validate_details,
+    validate_discard_note, validate_title,
 };
 use chrono::Utc;
 
@@ -100,28 +101,6 @@ impl TaskService {
         Ok(self
             .storage
             .move_task(&task, TaskStatus::InProgress, Utc::now())?)
-    }
-
-    /// Marks a task done and records one or more learning lines in `learnings.md`.
-    ///
-    /// Learnings are validated before state changes so malformed input never moves
-    /// the task. On success the task is moved first, then the learning entry is
-    /// appended using the same completion timestamp.
-    pub fn done_task_with_learning(
-        &self,
-        query: &str,
-        learning: &str,
-    ) -> Result<Task, ServiceError> {
-        self.storage.require_layout()?;
-        let learning_lines = parse_learning_lines(learning).map_err(validation_error)?;
-        let task = self.resolve_task(query)?;
-
-        let now = Utc::now();
-        let moved = self.storage.move_task(&task, TaskStatus::Done, now)?;
-        self.storage
-            .append_learning(now, &moved.title, &learning_lines)?;
-
-        Ok(moved)
     }
 
     /// Marks a task as done without recording learnings.
@@ -222,8 +201,13 @@ impl TaskService {
         Ok(self.storage.update_task(&task)?)
     }
 
+    /// Reads the raw markdown content of a task file.
+    pub fn read_task_content(&self, task: &Task) -> Result<String, ServiceError> {
+        Ok(self.storage.read_task_content(task)?)
+    }
+
     /// Resolves a user query against all visible tasks.
-    fn resolve_task(&self, query: &str) -> Result<Task, ServiceError> {
+    pub(crate) fn resolve_task(&self, query: &str) -> Result<Task, ServiceError> {
         let all = self.storage.list_tasks(None, None)?;
         resolve_query(&all, query)
     }
@@ -244,13 +228,5 @@ impl TaskService {
             }
             _ => Ok(()),
         }
-    }
-}
-
-/// Converts domain validation failures into service-layer validation errors.
-fn validation_error(err: DomainError) -> ServiceError {
-    match err {
-        DomainError::ValidationError(msg) => ServiceError::ValidationError(msg),
-        other => ServiceError::ValidationError(other.to_string()),
     }
 }

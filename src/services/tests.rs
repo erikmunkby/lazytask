@@ -29,9 +29,7 @@ fn create_start_done_delete_flow() {
     let task = service.start_task("rewrite-cli").unwrap();
     assert_eq!(task.status, TaskStatus::InProgress);
 
-    let task = service
-        .done_task_with_learning("rewrite-cli", "line 1\nline 2")
-        .unwrap();
+    let task = service.done_task_without_learning("rewrite-cli").unwrap();
     assert_eq!(task.status, TaskStatus::Done);
 
     let deleted = service.delete_task("rewrite-cli").unwrap();
@@ -348,4 +346,31 @@ fn cleanup_expired_terminal_tasks_deletes_done_and_discard_by_ttl() {
     assert_eq!(deleted, 2);
     assert!(!done_path.exists());
     assert!(!discard_path.exists());
+}
+
+#[test]
+fn add_learning_requires_done_status() {
+    let temp = TempDir::new().unwrap();
+    let service = service_for_temp(&temp);
+    service.init().unwrap();
+
+    service
+        .create_task(CreateTaskInput {
+            title: "Not done yet".to_string(),
+            task_type: TaskType::Task,
+            details: "details".to_string(),
+            start: true,
+            require_details: true,
+        })
+        .unwrap();
+
+    let err = service
+        .add_learning_for_done_task("not-done-yet", "some learning")
+        .unwrap_err();
+    assert!(matches!(err, ServiceError::ValidationError(_)));
+
+    service.done_task_without_learning("not-done-yet").unwrap();
+    service
+        .add_learning_for_done_task("not-done-yet", "some learning")
+        .unwrap();
 }

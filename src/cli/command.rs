@@ -41,8 +41,6 @@ pub(super) enum Commands {
     },
     Done {
         query: String,
-        #[arg(long)]
-        learning: String,
     },
     Discard {
         query: String,
@@ -53,6 +51,11 @@ pub(super) enum Commands {
         query: String,
     },
     Learn {
+        query: Option<String>,
+        #[arg(long, allow_hyphen_values = true)]
+        learning: Option<String>,
+        #[arg(long)]
+        review: bool,
         #[arg(long, hide = true)]
         finished: bool,
     },
@@ -68,5 +71,5 @@ pub(super) struct TaskData {
     pub details: String,
     pub updated: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub hint: Option<String>,
+    pub next_step: Option<String>,
 }

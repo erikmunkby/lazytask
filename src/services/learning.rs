@@ -1,8 +1,34 @@
+use super::errors::validation_error;
 use super::{LearnEntry, LearnResult, ServiceError, TaskService};
 use crate::config::markdown_for_key;
-use crate::domain::Task;
+use crate::domain::{Task, TaskStatus, normalize_escaped_newlines, parse_learning_lines};
+use chrono::Utc;
 
 impl TaskService {
+    /// Records a learning for a task that is already in the `done` bucket.
+    pub fn add_learning_for_done_task(
+        &self,
+        query: &str,
+        learning: &str,
+    ) -> Result<Task, ServiceError> {
+        self.storage.require_layout()?;
+        let normalized = normalize_escaped_newlines(learning);
+        let learning_lines = parse_learning_lines(&normalized).map_err(validation_error)?;
+
+        let task = self.resolve_task(query)?;
+
+        if task.status != TaskStatus::Done {
+            return Err(ServiceError::ValidationError(
+                "learning can only be added to a done task".to_string(),
+            ));
+        }
+
+        self.storage
+            .append_learning(Utc::now(), &task.title, &learning_lines)?;
+
+        Ok(task)
+    }
+
     /// Returns pending learnings plus the prompt instructions for processing them.
     pub fn learn(&self) -> Result<LearnResult, ServiceError> {
         self.storage.require_layout()?;
@@ -39,10 +65,5 @@ impl TaskService {
     /// Returns the current learnings line count for threshold hinting.
     pub fn learnings_line_count(&self) -> Result<usize, ServiceError> {
         Ok(self.storage.learnings_line_count()?)
-    }
-
-    /// Reads the raw markdown content of a task file.
-    pub fn read_task_content(&self, task: &Task) -> Result<String, ServiceError> {
-        Ok(self.storage.read_task_content(task)?)
     }
 }

@@ -45,3 +45,11 @@ impl From<ConfigError> for ServiceError {
         }
     }
 }
+
+/// Converts domain validation failures into service-layer validation errors.
+pub(crate) fn validation_error(err: DomainError) -> ServiceError {
+    match err {
+        DomainError::ValidationError(msg) => ServiceError::ValidationError(msg),
+        other => ServiceError::ValidationError(other.to_string()),
+    }
+}
