@@ -1,5 +1,5 @@
 use super::command::{Commands, TaskData};
-use crate::config::{AppConfig, markdown_for_key};
+use crate::config::{AppConfig, markdown_for_key, resolve_done_reflection};
 use crate::domain::{Task, TaskStatus, TaskType, format_relative};
 use crate::services::{CreateTaskInput, ServiceError, TaskService};
 use serde_json::{Value, json};
@@ -78,9 +78,10 @@ pub(super) fn run_ai_command(
             let now = chrono::Utc::now();
             let task = service.done_task_without_learning(&query)?;
             let mut data = to_task_data(&task, now);
-            data.next_step = prompt_by_key(config.prompts.done_reflection_key)
-                .ok()
-                .map(str::to_string);
+            data.next_step = Some(
+                resolve_done_reflection(config.prompt_overrides.done_reflection.as_deref())
+                    .to_string(),
+            );
             Ok(serde_json::to_value(data).unwrap())
         }
         Commands::Discard {

@@ -28,6 +28,7 @@ fn load_uses_defaults_when_file_is_missing() {
         config.prompts.learn_threshold_hint_key,
         "learn_threshold_hint"
     );
+    assert_eq!(config.prompt_overrides.done_reflection, None);
     assert_eq!(config.config_path(), temp.path().join("lazytask.toml"));
 }
 
@@ -106,7 +107,11 @@ fn ensure_default_file_creates_expected_schema() {
     ensure_default_file(&config).unwrap();
 
     let body = fs::read_to_string(temp.path().join("lazytask.toml")).unwrap();
-    let expected = schema::render_default_config_body();
+    let expected = format!(
+        "{}{}",
+        schema::render_default_config_body(),
+        prompts::render_prompts_section()
+    );
     assert_eq!(body, expected);
 }
 
@@ -137,6 +142,9 @@ fn ensure_default_file_backfills_missing_keys_without_overwriting_existing_value
             );
         }
     }
+    // Prompts section backfilled
+    assert!(body.contains("[prompts]"));
+    assert!(body.contains("done_reflection"));
 }
 
 #[test]
@@ -167,6 +175,44 @@ fn ensure_default_file_upgrade_overwrites_existing_values() {
     ensure_default_file_with_upgrade(&config, true).unwrap();
 
     let body = fs::read_to_string(temp.path().join("lazytask.toml")).unwrap();
-    let expected = schema::render_default_config_body();
+    let expected = format!(
+        "{}{}",
+        schema::render_default_config_body(),
+        prompts::render_prompts_section()
+    );
     assert_eq!(body, expected);
+}
+
+#[test]
+fn load_reads_custom_done_reflection_prompt() {
+    let temp = TempDir::new().unwrap();
+    fs::write(
+        temp.path().join("lazytask.toml"),
+        "[prompts]\ndone_reflection = 'My custom reflection prompt'\n",
+    )
+    .unwrap();
+
+    let config = load_for_workspace_root(temp.path()).unwrap();
+
+    assert_eq!(
+        config.prompt_overrides.done_reflection.as_deref(),
+        Some("My custom reflection prompt")
+    );
+}
+
+#[test]
+fn backfill_preserves_custom_done_reflection_prompt() {
+    let temp = TempDir::new().unwrap();
+    let config = load_for_workspace_root(temp.path()).unwrap();
+    fs::write(
+        temp.path().join("lazytask.toml"),
+        "[limits]\ntodo = 5\n\n[prompts]\ndone_reflection = 'Custom prompt'\n",
+    )
+    .unwrap();
+
+    ensure_default_file(&config).unwrap();
+
+    let body = fs::read_to_string(temp.path().join("lazytask.toml")).unwrap();
+    assert!(body.contains("Custom prompt"));
+    assert!(body.contains("[prompts]"));
 }
