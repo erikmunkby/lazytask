@@ -2,6 +2,11 @@ use super::prompts::{DEFAULT_PROMPT_CONFIG, PromptConfig};
 use std::path::PathBuf;
 use thiserror::Error;
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct PromptOverrides {
+    pub done_reflection: Option<String>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LimitsConfig {
     pub todo: usize,
@@ -38,6 +43,7 @@ pub struct AppConfig {
     pub retention: RetentionConfig,
     pub storage_layout: StorageLayoutConfig,
     pub prompts: PromptConfig,
+    pub prompt_overrides: PromptOverrides,
     pub(crate) config_file_name: &'static str,
 }
 

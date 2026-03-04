@@ -1,8 +1,10 @@
+use super::prompts::render_prompts_section;
 use super::schema::{
     ConfigKeySchema, USER_CONFIG_SCHEMA, default_usize, render_default_config_body,
 };
 use super::types::{
-    AppConfig, ConfigError, HintsConfig, INTERNAL_CONFIG, LimitsConfig, RetentionConfig,
+    AppConfig, ConfigError, HintsConfig, INTERNAL_CONFIG, LimitsConfig, PromptOverrides,
+    RetentionConfig,
 };
 use serde::Deserialize;
 use std::fs;
@@ -14,6 +16,12 @@ struct UserConfig {
     limits: Option<UserLimitsConfig>,
     hints: Option<UserHintsConfig>,
     retention: Option<UserRetentionConfig>,
+    prompts: Option<UserPromptsConfig>,
+}
+
+#[derive(Debug, Deserialize)]
+struct UserPromptsConfig {
+    done_reflection: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -73,6 +81,10 @@ pub fn load_for_workspace_root(workspace_root: impl AsRef<Path>) -> Result<AppCo
             .unwrap_or(default_usize("retention", "done_discard_ttl_days")),
     };
 
+    let prompt_overrides = PromptOverrides {
+        done_reflection: user.prompts.and_then(|p| p.done_reflection),
+    };
+
     validate_min(limits.todo, "limits", "todo")?;
     validate_min(limits.in_progress, "limits", "in_progress")?;
     validate_min(hints.learn_threshold, "hints", "learn_threshold")?;
@@ -89,6 +101,7 @@ pub fn load_for_workspace_root(workspace_root: impl AsRef<Path>) -> Result<AppCo
         retention,
         storage_layout: INTERNAL_CONFIG.storage_layout,
         prompts: INTERNAL_CONFIG.prompts,
+        prompt_overrides,
         config_file_name: INTERNAL_CONFIG.config_file_name,
     })
 }
@@ -106,13 +119,13 @@ pub fn ensure_default_file_with_upgrade(
     upgrade: bool,
 ) -> Result<(), ConfigError> {
     let path = config.config_path();
-    if !path.exists() {
-        fs::write(path, render_default_config_body())?;
-        return Ok(());
-    }
-
-    if upgrade {
-        fs::write(path, render_default_config_body())?;
+    if !path.exists() || upgrade {
+        let full_default = format!(
+            "{}{}",
+            render_default_config_body(),
+            render_prompts_section()
+        );
+        fs::write(path, full_default)?;
         return Ok(());
     }
 
@@ -161,11 +174,25 @@ fn backfill_missing_keys(source: &str) -> Result<Option<String>, ConfigError> {
         }
     }
 
-    if changed {
-        Ok(Some(document.to_string()))
-    } else {
-        Ok(None)
+    // Backfill [prompts] via raw text to preserve triple-quoted multiline values
+    // that toml_edit would mangle.
+    let needs_prompts = !source.contains("[prompts]");
+
+    if !changed && !needs_prompts {
+        return Ok(None);
     }
+
+    let mut result = if changed {
+        document.to_string()
+    } else {
+        source.to_string()
+    };
+
+    if needs_prompts {
+        result.push_str(&render_prompts_section());
+    }
+
+    Ok(Some(result))
 }
 
 /// Inserts a default scalar key and appends its inline description comment.
