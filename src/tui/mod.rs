@@ -14,10 +14,12 @@ use crossterm::terminal::{
 use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 use std::io::{self, Stdout};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::tui::app::App;
 use crate::tui::render::render;
+
+const REFRESH_INTERVAL: Duration = Duration::from_secs(3);
 
 /// Runs the interactive TUI loop until quit.
 pub fn run(service: TaskService, learn_threshold: usize) -> Result<()> {
@@ -26,12 +28,18 @@ pub fn run(service: TaskService, learn_threshold: usize) -> Result<()> {
     app.dispatch(actions::Action::RefreshTasks);
     app.dispatch(actions::Action::CheckLearningHint);
     let update_rx = update_check::spawn_update_check();
+    let mut last_refresh = Instant::now();
 
     while !app.state.should_quit {
         guard.terminal.draw(|frame| render(frame, &app.state))?;
 
         if let Ok(version) = update_rx.try_recv() {
             app.dispatch(actions::Action::UpdateAvailable { version });
+        }
+
+        if last_refresh.elapsed() >= REFRESH_INTERVAL {
+            app.dispatch(actions::Action::RefreshTasks);
+            last_refresh = Instant::now();
         }
 
         if event::poll(Duration::from_millis(200))?
