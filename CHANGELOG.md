@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.2.0...lazytask-v0.3.0) (2026-03-09)
+
+
+### Features
+
+* **cli:** decouple learnings from task completion ([ecae8a9](https://github.com/erikmunkby/lazytask/commit/ecae8a9eee4797bef95ed850496b46854742f27a))
+* **cli:** make done_reflection prompt configurable via lazytask.toml ([0a9923b](https://github.com/erikmunkby/lazytask/commit/0a9923b8f729287a5dcfac4a8fb8b7897af70ea9))
+* **tui:** automatic version check ([077359d](https://github.com/erikmunkby/lazytask/commit/077359d8134d80566587148caffcb8010808295b))
+
+
+### Bug Fixes
+
+* **cli:** slimmer responses ([05935a1](https://github.com/erikmunkby/lazytask/commit/05935a14a8e712494d22ce1ba283b2029132f42c))
+* **cli:** strengthen reflection prompt against safe-learning bias ([d17c555](https://github.com/erikmunkby/lazytask/commit/d17c55509675c9986022f35814a894bb5123d854))
+
 ## [0.2.0](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.1.0...lazytask-v0.2.0) (2026-02-27)
 
 
