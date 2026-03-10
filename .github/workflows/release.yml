@@ -143,6 +143,71 @@ jobs:
             gh release upload "${TAG}" "${f}" --repo "${{ github.repository }}"
           done
 
+  publish-homebrew:
+    name: 🍺 Update Homebrew formula
+    needs: [build-release, publish-release]
+    if: needs.build-release.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: 📥 Download SHA256SUMS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.build-release.outputs.tag_name }}
+        run: |
+          gh release download "${TAG}" --pattern 'SHA256SUMS' --repo "${{ github.repository }}"
+          cat SHA256SUMS
+
+      - name: 🔄 Clone homebrew-tap
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/erikmunkby/homebrew-tap.git"
+
+      - name: 📝 Update formula
+        env:
+          TAG: ${{ needs.build-release.outputs.tag_name }}
+        run: |
+          VERSION="${TAG#lazytask-v}"
+          FORMULA="homebrew-tap/Formula/lazytask.rb"
+
+          SHA_AARCH64_MACOS=$(grep "lt-aarch64-apple-darwin" SHA256SUMS | awk '{print $1}')
+          SHA_X86_64_MACOS=$(grep "lt-x86_64-apple-darwin" SHA256SUMS | awk '{print $1}')
+          SHA_X86_64_LINUX=$(grep "lt-x86_64-unknown-linux-gnu" SHA256SUMS | awk '{print $1}')
+
+          echo "Updating formula to v${VERSION}"
+          echo "  aarch64-macos: ${SHA_AARCH64_MACOS}"
+          echo "  x86_64-macos:  ${SHA_X86_64_MACOS}"
+          echo "  x86_64-linux:  ${SHA_X86_64_LINUX}"
+
+          # Update version
+          sed -i "s/version \".*\"/version \"${VERSION}\"/" "${FORMULA}"
+
+          # Update SHA256 hashes in order of appearance
+          # 1st sha256 = aarch64-apple-darwin (macOS ARM)
+          # 2nd sha256 = x86_64-apple-darwin (macOS Intel)
+          # 3rd sha256 = x86_64-unknown-linux-gnu (Linux)
+          sed -i "0,/sha256 \"[a-f0-9]\{64\}\"/s//sha256 \"${SHA_AARCH64_MACOS}\"/" "${FORMULA}"
+          sed -i "0,/sha256 \"[a-f0-9]\{64\}\"/s//sha256 \"${SHA_X86_64_MACOS}\"/" "${FORMULA}"
+          sed -i "0,/sha256 \"[a-f0-9]\{64\}\"/s//sha256 \"${SHA_X86_64_LINUX}\"/" "${FORMULA}"
+
+          echo "--- Updated formula ---"
+          cat "${FORMULA}"
+
+      - name: 🚀 Push updated formula
+        env:
+          TAG: ${{ needs.build-release.outputs.tag_name }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          VERSION="${TAG#lazytask-v}"
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/lazytask.rb
+          git commit -m "lazytask ${VERSION}"
+          git push
+
   publish-crate:
     name: 📦 Publish to crates.io
     needs: [build-release, publish-release]

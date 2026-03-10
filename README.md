@@ -75,7 +75,21 @@ Each task is a single `.md` file. Moving a task from `todo` to `in-progress` is 
 
 ### Install
 
-Install instructions coming soon
+**Homebrew (macOS & Linux):**
+
+```bash
+brew install erikmunkby/tap/lazytask
+```
+
+**Cargo (all platforms):**
+
+```bash
+cargo install lazytask
+```
+
+**Binary download:**
+
+Grab the latest binary from [GitHub Releases](https://github.com/erikmunkby/lazytask/releases/latest).
 
 ### Quick start
 
