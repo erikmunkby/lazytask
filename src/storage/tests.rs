@@ -22,6 +22,44 @@ fn parses_learning_entries_file() {
 }
 
 #[test]
+fn parses_learning_with_pipe_in_bullet() {
+    let entries = learning::parse_learning_entries(
+        "2026-02-21T14:00:00Z | task a\n- The useToast hook returns string | toast ID\n- normal line\n",
+    )
+    .unwrap();
+
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].task_title, "task a");
+    assert_eq!(entries[0].lines.len(), 2);
+    assert_eq!(
+        entries[0].lines[0],
+        "The useToast hook returns string | toast ID"
+    );
+    assert_eq!(entries[0].lines[1], "normal line");
+}
+
+#[test]
+fn round_trip_learning_with_pipe_in_bullet() {
+    let temp = TempDir::new().unwrap();
+    let storage = storage_for_temp(&temp);
+    storage.ensure_layout().unwrap();
+    let now = Utc.with_ymd_and_hms(2026, 3, 12, 10, 0, 0).unwrap();
+
+    storage
+        .append_learning(
+            now,
+            "some task",
+            &["hook returns string | toast ID".to_string()],
+        )
+        .unwrap();
+
+    let entries = storage.read_learning_entries().unwrap();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].task_title, "some task");
+    assert_eq!(entries[0].lines, vec!["hook returns string | toast ID"]);
+}
+
+#[test]
 fn round_trip_create_and_list_task() {
     let temp = TempDir::new().unwrap();
     let storage = storage_for_temp(&temp);

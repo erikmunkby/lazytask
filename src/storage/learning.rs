@@ -84,6 +84,13 @@ pub(crate) fn parse_learning_entries(contents: &str) -> Result<Vec<LearningEntry
             continue;
         }
 
+        if let Some(entry) = current.as_mut()
+            && let Some(item) = trimmed.strip_prefix("- ")
+        {
+            entry.lines.push(item.trim().to_string());
+            continue;
+        }
+
         if let Some((ts, title)) = trimmed.split_once(" | ") {
             if let Some(entry) = current.take() {
                 entries.push(entry);
@@ -94,13 +101,6 @@ pub(crate) fn parse_learning_entries(contents: &str) -> Result<Vec<LearningEntry
                 task_title: title.trim().to_string(),
                 lines: Vec::new(),
             });
-            continue;
-        }
-
-        if let Some(entry) = current.as_mut()
-            && let Some(item) = trimmed.strip_prefix("- ")
-        {
-            entry.lines.push(item.trim().to_string());
         }
     }
 
