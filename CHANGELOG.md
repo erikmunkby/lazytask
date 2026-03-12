@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.3.0...lazytask-v0.4.0) (2026-03-12)
+
+
+### Features
+
+* **tui:** auto-refresh tasks every 3 seconds ([793e649](https://github.com/erikmunkby/lazytask/commit/793e649da111ceaf3ae38a017984de70519887af))
+
+
+### Bug Fixes
+
+* **cli:** parse bullet lines before headers in LEARNINGS.md ([e3146fc](https://github.com/erikmunkby/lazytask/commit/e3146fce5a60c8e1163c3a9cf415c89ed9046d31))
+
 ## [0.3.0](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.2.0...lazytask-v0.3.0) (2026-03-09)
 
 
