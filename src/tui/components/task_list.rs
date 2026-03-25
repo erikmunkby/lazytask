@@ -1,7 +1,9 @@
+use crate::config::LimitsConfig;
 use crate::domain::{Task, TaskStatus, TaskType, format_relative};
 use ratatui::Frame;
 use ratatui::layout::Constraint;
 use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Cell, Row, Table, TableState};
 
 const DIMMED: Style = Style::new().fg(Color::DarkGray);
@@ -28,6 +30,7 @@ pub fn render(
     area: ratatui::layout::Rect,
     tasks: &[Task],
     selected_index: usize,
+    limits: LimitsConfig,
 ) {
     let now = chrono::Utc::now();
     let separator_index = completed_separator_index(tasks);
@@ -49,7 +52,7 @@ pub fn render(
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Tasks")
+                .title(wip_title(tasks, limits))
                 .border_style(Style::default().fg(Color::Green)),
         )
         .row_highlight_style(
@@ -119,6 +122,46 @@ fn completed_separator_index(tasks: &[Task]) -> Option<usize> {
     if has_active { first_completed } else { None }
 }
 
+/// Builds the block title line with colored WIP limit indicators.
+fn wip_title(tasks: &[Task], limits: LimitsConfig) -> Line<'static> {
+    let todo_count = tasks
+        .iter()
+        .filter(|t| t.status == TaskStatus::Todo)
+        .count();
+    let ip_count = tasks
+        .iter()
+        .filter(|t| t.status == TaskStatus::InProgress)
+        .count();
+
+    Line::from(vec![
+        Span::raw("Tasks "),
+        Span::styled(
+            format!("[todo {todo_count}/{}]", limits.todo),
+            Style::new().fg(limit_color(todo_count, limits.todo)),
+        ),
+        Span::raw(" "),
+        Span::styled(
+            format!("[wip {ip_count}/{}]", limits.in_progress),
+            Style::new().fg(limit_color(ip_count, limits.in_progress)),
+        ),
+    ])
+}
+
+/// Returns a color reflecting how close `count` is to `limit`.
+///
+/// - At limit (100%) → Red
+/// - 75%+ of limit → Yellow
+/// - Below 75% → DarkGray (dimmed)
+fn limit_color(count: usize, limit: usize) -> Color {
+    if count >= limit {
+        Color::Red
+    } else if count * 100 >= limit * 75 {
+        Color::Yellow
+    } else {
+        Color::DarkGray
+    }
+}
+
 /// Translates task index to rendered row index when a separator row is present.
 fn display_selected_index(selected_index: usize, separator_index: Option<usize>) -> usize {
     match separator_index {
@@ -129,9 +172,10 @@ fn display_selected_index(selected_index: usize, separator_index: Option<usize>)
 
 #[cfg(test)]
 mod tests {
-    use super::{completed_separator_index, display_selected_index, status_display};
+    use super::{completed_separator_index, display_selected_index, limit_color, status_display};
     use crate::domain::{Task, TaskStatus, TaskType};
     use chrono::{TimeZone, Utc};
+    use ratatui::style::Color;
 
     #[test]
     fn status_display_is_compact_for_in_progress_only() {
@@ -170,6 +214,32 @@ mod tests {
         assert_eq!(display_selected_index(2, Some(2)), 3);
         assert_eq!(display_selected_index(3, Some(2)), 4);
         assert_eq!(display_selected_index(1, None), 1);
+    }
+
+    #[test]
+    fn limit_color_dimmed_when_well_under() {
+        assert_eq!(limit_color(0, 20), Color::DarkGray);
+        assert_eq!(limit_color(14, 20), Color::DarkGray);
+    }
+
+    #[test]
+    fn limit_color_yellow_when_approaching() {
+        assert_eq!(limit_color(15, 20), Color::Yellow); // exactly 75%
+        assert_eq!(limit_color(19, 20), Color::Yellow);
+        assert_eq!(limit_color(3, 4), Color::Yellow); // 75%
+    }
+
+    #[test]
+    fn limit_color_dimmed_for_small_limits_under_threshold() {
+        // 2/3 = 66.7% → still under 75%
+        assert_eq!(limit_color(2, 3), Color::DarkGray);
+    }
+
+    #[test]
+    fn limit_color_red_at_limit() {
+        assert_eq!(limit_color(20, 20), Color::Red);
+        assert_eq!(limit_color(3, 3), Color::Red);
+        assert_eq!(limit_color(1, 1), Color::Red);
     }
 
     fn task(title: &str, status: TaskStatus) -> Task {

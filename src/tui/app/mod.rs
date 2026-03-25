@@ -17,6 +17,7 @@ pub struct App {
 impl App {
     /// Creates app state with empty task data and normal interaction mode.
     pub fn new(service: TaskService, learn_threshold: usize) -> Self {
+        let limits = service.config.limits;
         Self {
             service,
             learn_threshold,
@@ -28,6 +29,7 @@ impl App {
                 last_deleted: None,
                 mode: Mode::Normal,
                 should_quit: false,
+                limits,
             },
         }
     }
