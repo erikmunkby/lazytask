@@ -32,10 +32,7 @@ fn check_latest_version(tx: &mpsc::Sender<String>) -> Result<(), Box<dyn std::er
         .body_mut()
         .read_json()?;
 
-    let remote = release
-        .tag_name
-        .strip_prefix('v')
-        .unwrap_or(&release.tag_name);
+    let remote = strip_tag_prefix(&release.tag_name);
     let current = env!("CARGO_PKG_VERSION");
 
     if is_newer(remote, current) {
@@ -43,6 +40,12 @@ fn check_latest_version(tx: &mpsc::Sender<String>) -> Result<(), Box<dyn std::er
     }
 
     Ok(())
+}
+
+fn strip_tag_prefix(tag: &str) -> &str {
+    tag.find(|c: char| c.is_ascii_digit())
+        .map(|i| &tag[i..])
+        .unwrap_or(tag)
 }
 
 /// Returns true if `remote` is a strictly newer semver than `current`.
@@ -92,6 +95,21 @@ mod tests {
     #[test]
     fn malformed_current() {
         assert!(!is_newer("0.3.0", "abc"));
+    }
+
+    #[test]
+    fn strip_lazytask_v_prefix() {
+        assert_eq!(super::strip_tag_prefix("lazytask-v0.4.0"), "0.4.0");
+    }
+
+    #[test]
+    fn strip_v_prefix() {
+        assert_eq!(super::strip_tag_prefix("v1.2.3"), "1.2.3");
+    }
+
+    #[test]
+    fn strip_no_prefix() {
+        assert_eq!(super::strip_tag_prefix("0.4.0"), "0.4.0");
     }
 
     #[ignore] // repo is currently private
