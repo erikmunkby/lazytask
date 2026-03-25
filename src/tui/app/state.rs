@@ -1,3 +1,4 @@
+use crate::config::LimitsConfig;
 use crate::domain::{Task, TaskType};
 use crate::tui::actions::CreateField;
 use std::collections::VecDeque;
@@ -168,4 +169,5 @@ pub struct AppState {
     pub last_deleted: Option<Task>,
     pub mode: Mode,
     pub should_quit: bool,
+    pub limits: LimitsConfig,
 }

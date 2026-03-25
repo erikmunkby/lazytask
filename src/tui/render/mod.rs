@@ -22,7 +22,13 @@ pub fn render(frame: &mut Frame, state: &AppState) {
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(main_area);
 
-    task_list::render(frame, chunks[0], &state.tasks, state.selected_index);
+    task_list::render(
+        frame,
+        chunks[0],
+        &state.tasks,
+        state.selected_index,
+        state.limits,
+    );
 
     let right = Layout::default()
         .direction(Direction::Vertical)
