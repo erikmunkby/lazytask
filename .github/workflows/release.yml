@@ -184,13 +184,19 @@ jobs:
           # Update version
           sed -i "s/version \".*\"/version \"${VERSION}\"/" "${FORMULA}"
 
-          # Update SHA256 hashes in order of appearance
-          # 1st sha256 = aarch64-apple-darwin (macOS ARM)
-          # 2nd sha256 = x86_64-apple-darwin (macOS Intel)
-          # 3rd sha256 = x86_64-unknown-linux-gnu (Linux)
-          sed -i "0,/sha256 \"[a-f0-9]\{64\}\"/s//sha256 \"${SHA_AARCH64_MACOS}\"/" "${FORMULA}"
-          sed -i "0,/sha256 \"[a-f0-9]\{64\}\"/s//sha256 \"${SHA_X86_64_MACOS}\"/" "${FORMULA}"
-          sed -i "0,/sha256 \"[a-f0-9]\{64\}\"/s//sha256 \"${SHA_X86_64_LINUX}\"/" "${FORMULA}"
+          # Update SHA256 hashes by order of appearance:
+          # 1st = aarch64-apple-darwin, 2nd = x86_64-apple-darwin, 3rd = x86_64-linux
+          # Note: sequential sed "0,/pattern/" won't work because each run
+          # re-matches the already-replaced first line.
+          awk -v s1="${SHA_AARCH64_MACOS}" -v s2="${SHA_X86_64_MACOS}" -v s3="${SHA_X86_64_LINUX}" '
+            /sha256 "[a-f0-9]{64}"/ {
+              n++
+              if      (n==1) sub(/sha256 "[a-f0-9]+"/, "sha256 \"" s1 "\"")
+              else if (n==2) sub(/sha256 "[a-f0-9]+"/, "sha256 \"" s2 "\"")
+              else if (n==3) sub(/sha256 "[a-f0-9]+"/, "sha256 \"" s3 "\"")
+            }
+            { print }
+          ' "${FORMULA}" > "${FORMULA}.tmp" && mv "${FORMULA}.tmp" "${FORMULA}"
 
           echo "--- Updated formula ---"
           cat "${FORMULA}"
