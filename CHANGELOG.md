@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.4.0...lazytask-v0.4.1) (2026-03-25)
+
+
+### Bug Fixes
+
+* **tui:** parse version from GitHub release tags with lazytask- prefix ([832d3b1](https://github.com/erikmunkby/lazytask/commit/832d3b1a839f87c866fa6e1d59f86bdd6524879b))
+
 ## [0.4.0](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.3.0...lazytask-v0.4.0) (2026-03-25)
 
 
