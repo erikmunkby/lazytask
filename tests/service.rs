@@ -32,16 +32,13 @@ fn service_lifecycle_and_learn_finished() {
     let done = service.done_task_without_learning("service-task").unwrap();
     assert_eq!(done.status, TaskStatus::Done);
 
-    // add learning for the completed task
-    service
-        .add_learning_for_done_task("service-task", "line one\nline two")
-        .unwrap();
+    // add learning
+    service.add_learning("line one\nline two").unwrap();
 
     // learn returns all entries
     let first = service.learn().unwrap();
     assert_eq!(first.entries.len(), 1);
     assert!(!first.instructions.is_empty());
-    assert_eq!(first.entries[0].title, "Service task");
     assert_eq!(first.entries[0].learnings, "line one\nline two");
     assert!(!first.entries[0].date.contains('T'));
 
@@ -205,7 +202,7 @@ fn learnings_line_count_tracks_non_empty_lines() {
     let service = service_for_path(temp.path());
     service.init().unwrap();
 
-    let content = "2026-02-21T14:00:00Z | task a\n- line 1\n- line 2\n\n";
+    let content = "2026-02-21T14:00:00Z\n- line 1\n- line 2\n\n";
     fs::write(temp.path().join(".tasks/LEARNINGS.md"), content).unwrap();
 
     assert_eq!(service.learnings_line_count().unwrap(), 3);
@@ -219,8 +216,8 @@ fn learnings_line_count_above_threshold() {
 
     // Generate >80 non-empty lines
     let mut content = String::new();
-    for i in 0..30 {
-        content.push_str(&format!("2026-02-21T14:00:00Z | task {i}\n"));
+    for _ in 0..30 {
+        content.push_str("2026-02-21T14:00:00Z\n");
         content.push_str("- learning a\n");
         content.push_str("- learning b\n");
         content.push('\n');

@@ -349,28 +349,14 @@ fn cleanup_expired_terminal_tasks_deletes_done_and_discard_by_ttl() {
 }
 
 #[test]
-fn add_learning_requires_done_status() {
+fn add_learning_records_entry() {
     let temp = TempDir::new().unwrap();
     let service = service_for_temp(&temp);
     service.init().unwrap();
 
-    service
-        .create_task(CreateTaskInput {
-            title: "Not done yet".to_string(),
-            task_type: TaskType::Task,
-            details: "details".to_string(),
-            start: true,
-            require_details: true,
-        })
-        .unwrap();
+    service.add_learning("some learning").unwrap();
 
-    let err = service
-        .add_learning_for_done_task("not-done-yet", "some learning")
-        .unwrap_err();
-    assert!(matches!(err, ServiceError::ValidationError(_)));
-
-    service.done_task_without_learning("not-done-yet").unwrap();
-    service
-        .add_learning_for_done_task("not-done-yet", "some learning")
-        .unwrap();
+    let result = service.learn().unwrap();
+    assert_eq!(result.entries.len(), 1);
+    assert_eq!(result.entries[0].learnings, "some learning");
 }

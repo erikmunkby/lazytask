@@ -51,7 +51,6 @@ pub(super) enum Commands {
         query: String,
     },
     Learn {
-        query: Option<String>,
         #[arg(long, allow_hyphen_values = true)]
         learning: Option<String>,
         #[arg(long)]

@@ -62,7 +62,7 @@ fn clear_learnings_removes_file() {
 
     // Write a learning entry
     storage
-        .append_learning(Utc::now(), "test task", &["learned something".to_string()])
+        .append_learning(Utc::now(), &["learned something".to_string()])
         .unwrap();
     assert!(temp.path().join(".tasks/LEARNINGS.md").exists());
 
