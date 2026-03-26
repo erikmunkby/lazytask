@@ -28,7 +28,6 @@ pub struct LearnResult {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct LearnEntry {
-    pub title: String,
     pub date: String,
     pub learnings: String,
 }

@@ -12,7 +12,6 @@ use thiserror::Error;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct LearningEntry {
     pub timestamp: DateTime<Utc>,
-    pub task_title: String,
     pub lines: Vec<String>,
 }
 

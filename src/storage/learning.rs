@@ -4,21 +4,14 @@ use chrono::{DateTime, Utc};
 use std::fs;
 
 impl Storage {
-    /// Appends one completed-task learning entry to `LEARNINGS.md`.
-    ///
-    /// Entries are timestamped and written as a header plus markdown bullet lines.
+    /// Appends a timestamped learning entry to `LEARNINGS.md`.
     pub fn append_learning(
         &self,
         timestamp: DateTime<Utc>,
-        task_title: &str,
         lines: &[String],
     ) -> Result<(), StorageError> {
         let mut content = String::new();
-        content.push_str(&format!(
-            "{} | {}\n",
-            format_utc(timestamp),
-            task_title.trim()
-        ));
+        content.push_str(&format!("{}\n", format_utc(timestamp)));
         for line in lines {
             content.push_str(&format!("- {}\n", line.trim()));
         }
@@ -91,14 +84,14 @@ pub(crate) fn parse_learning_entries(contents: &str) -> Result<Vec<LearningEntry
             continue;
         }
 
-        if let Some((ts, title)) = trimmed.split_once(" | ") {
+        // Timestamp header line — starts a new entry.
+        if let Ok(ts) = parse_utc(trimmed) {
             if let Some(entry) = current.take() {
                 entries.push(entry);
             }
 
             current = Some(LearningEntry {
-                timestamp: parse_utc(ts).map_err(|err| StorageError::Parse(err.to_string()))?,
-                task_title: title.trim().to_string(),
+                timestamp: ts,
                 lines: Vec::new(),
             });
         }

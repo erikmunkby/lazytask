@@ -98,28 +98,29 @@ pub(super) fn run_ai_command(
             Ok(serde_json::to_value(to_task_data(&task, now)).unwrap())
         }
         Commands::Learn {
-            query,
             learning,
             review,
             finished,
-        } => match (query, learning, review, finished) {
-            (Some(q), Some(l), false, false) => {
-                let now = chrono::Utc::now();
-                let task = service.add_learning_for_done_task(&q, &l)?;
-                let mut data = to_task_data(&task, now);
-                data.next_step = learnings_hint(service, config);
-                Ok(serde_json::to_value(data).unwrap())
+        } => match (learning, review, finished) {
+            (Some(l), false, false) => {
+                service.add_learning(&l)?;
+                let mut result = json!({ "recorded": true });
+                if let Some(hint) = learnings_hint(service, config) {
+                    result["next_step"] = json!(hint);
+                }
+                Ok(result)
             }
-            (None, None, true, false) => {
+            (None, true, false) => {
                 let result = service.learn()?;
                 Ok(serde_json::to_value(result).unwrap())
             }
-            (None, None, false, true) => {
+            (None, false, true) => {
                 service.learn_finished()?;
                 Ok(json!({ "cleared": true }))
             }
             _ => Err(ServiceError::ValidationError(
-                "usage: lt learn '<title>' --learning '<text>' | lt learn --review | lt learn --finished".to_string(),
+                "usage: lt learn --learning '<text>' | lt learn --review | lt learn --finished"
+                    .to_string(),
             )),
         },
     }

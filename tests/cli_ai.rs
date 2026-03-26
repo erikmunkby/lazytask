@@ -475,7 +475,7 @@ fn ai_done_moves_to_done() {
     assert_eq!(payload["status"], "done");
     let next_step = payload["next_step"].as_str().unwrap();
     assert!(!next_step.is_empty());
-    assert!(next_step.contains("reflect"));
+    assert!(next_step.contains("completed a task"));
 }
 
 #[test]
@@ -667,7 +667,6 @@ fn ai_discard_note_validates_length_and_allows_multiline() {
 #[test]
 fn ai_learn_hint_threshold_uses_config_value() {
     let temp = init_temp();
-    create_task(&temp, "Ship rust");
 
     std::fs::write(
         temp.path().join("lazytask.toml"),
@@ -675,15 +674,9 @@ fn ai_learn_hint_threshold_uses_config_value() {
     )
     .unwrap();
 
-    lt_command()
-        .current_dir(temp.path())
-        .args(["done", "Ship rust"])
-        .output()
-        .unwrap();
-
     let output = lt_command()
         .current_dir(temp.path())
-        .args(["learn", "Ship rust", "--learning", "learned something"])
+        .args(["learn", "--learning", "learned something"])
         .output()
         .unwrap();
 
@@ -697,23 +690,10 @@ fn ai_learn_hint_threshold_uses_config_value() {
 #[test]
 fn ai_learn_normalizes_escaped_newlines_in_learning() {
     let temp = init_temp();
-    create_task(&temp, "Ship rust");
-
-    lt_command()
-        .current_dir(temp.path())
-        .args(["start", "Ship rust"])
-        .output()
-        .unwrap();
-
-    lt_command()
-        .current_dir(temp.path())
-        .args(["done", "Ship rust"])
-        .output()
-        .unwrap();
 
     let learn_add = lt_command()
         .current_dir(temp.path())
-        .args(["learn", "Ship rust", "--learning", "first\\nsecond"])
+        .args(["learn", "--learning", "first\\nsecond"])
         .output()
         .unwrap();
     assert!(learn_add.status.success());
@@ -817,27 +797,16 @@ fn ai_delete_removes_task() {
 #[test]
 fn ai_learn_returns_entries() {
     let temp = init_temp();
-    create_task(&temp, "Ship rust");
-
-    lt_command()
-        .current_dir(temp.path())
-        .args(["start", "Ship rust"])
-        .output()
-        .unwrap();
-
-    lt_command()
-        .current_dir(temp.path())
-        .args(["done", "Ship rust"])
-        .output()
-        .unwrap();
 
     // add learning via learn command
     let learn_add = lt_command()
         .current_dir(temp.path())
-        .args(["learn", "Ship rust", "--learning", "learned something"])
+        .args(["learn", "--learning", "learned something"])
         .output()
         .unwrap();
     assert!(learn_add.status.success());
+    let add_payload = parse_json(&learn_add.stdout);
+    assert_eq!(add_payload["recorded"], true);
 
     // review learnings
     let output = lt_command()
@@ -849,7 +818,6 @@ fn ai_learn_returns_entries() {
     let payload = parse_json(&output.stdout);
     assert!(output.status.success());
     assert_eq!(payload["entries"].as_array().unwrap().len(), 1);
-    assert_eq!(payload["entries"][0]["title"], "Ship rust");
     let date = payload["entries"][0]["date"].as_str().unwrap();
     assert_eq!(date.len(), 10);
     assert_eq!(date.chars().filter(|c| *c == '-').count(), 2);
@@ -935,28 +903,6 @@ fn ai_create_duplicate_returns_error() {
     let payload = parse_json(&output.stdout);
     assert!(!output.status.success());
     assert_eq!(payload["error"]["code"], "task_already_exists");
-}
-
-#[test]
-fn ai_learn_validates_task_must_be_done() {
-    let temp = init_temp();
-    create_task(&temp, "Ship rust");
-
-    lt_command()
-        .current_dir(temp.path())
-        .args(["start", "Ship rust"])
-        .output()
-        .unwrap();
-
-    let output = lt_command()
-        .current_dir(temp.path())
-        .args(["learn", "Ship rust", "--learning", "some learning"])
-        .output()
-        .unwrap();
-
-    let payload = parse_json(&output.stdout);
-    assert!(!output.status.success());
-    assert_eq!(payload["error"]["code"], "validation_error");
 }
 
 #[test]

@@ -13,23 +13,23 @@ fn storage_for_temp(temp: &TempDir) -> Storage {
 #[test]
 fn parses_learning_entries_file() {
     let entries = learning::parse_learning_entries(
-        "2026-02-21T14:00:00Z | task a\n- line 1\n- line 2\n\n2026-02-21T15:00:00Z | task b\n- x\n- y\n",
+        "2026-02-21T14:00:00Z\n- line 1\n- line 2\n\n2026-02-21T15:00:00Z\n- x\n- y\n",
     )
     .unwrap();
 
     assert_eq!(entries.len(), 2);
-    assert_eq!(entries[0].task_title, "task a");
+    assert_eq!(entries[0].lines, vec!["line 1", "line 2"]);
+    assert_eq!(entries[1].lines, vec!["x", "y"]);
 }
 
 #[test]
 fn parses_learning_with_pipe_in_bullet() {
     let entries = learning::parse_learning_entries(
-        "2026-02-21T14:00:00Z | task a\n- The useToast hook returns string | toast ID\n- normal line\n",
+        "2026-02-21T14:00:00Z\n- The useToast hook returns string | toast ID\n- normal line\n",
     )
     .unwrap();
 
     assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0].task_title, "task a");
     assert_eq!(entries[0].lines.len(), 2);
     assert_eq!(
         entries[0].lines[0],
@@ -46,16 +46,11 @@ fn round_trip_learning_with_pipe_in_bullet() {
     let now = Utc.with_ymd_and_hms(2026, 3, 12, 10, 0, 0).unwrap();
 
     storage
-        .append_learning(
-            now,
-            "some task",
-            &["hook returns string | toast ID".to_string()],
-        )
+        .append_learning(now, &["hook returns string | toast ID".to_string()])
         .unwrap();
 
     let entries = storage.read_learning_entries().unwrap();
     assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0].task_title, "some task");
     assert_eq!(entries[0].lines, vec!["hook returns string | toast ID"]);
 }
 

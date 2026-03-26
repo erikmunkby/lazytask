@@ -17,7 +17,6 @@ Commands (all return JSON):
   lt start '<title>'
   lt done '<title>'
   lt discard '<title>' --discard-note '<short why>'  # won't do
-  lt learn '<title>' --learning '<text>'
   lt learn --review
 
 After `lt done`, follow the `next_step` field in the response to capture learnings.

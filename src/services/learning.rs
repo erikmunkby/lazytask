@@ -1,32 +1,19 @@
 use super::errors::validation_error;
 use super::{LearnEntry, LearnResult, ServiceError, TaskService};
 use crate::config::markdown_for_key;
-use crate::domain::{Task, TaskStatus, normalize_escaped_newlines, parse_learning_lines};
+use crate::domain::{normalize_escaped_newlines, parse_learning_lines};
 use chrono::Utc;
 
 impl TaskService {
-    /// Records a learning for a task that is already in the `done` bucket.
-    pub fn add_learning_for_done_task(
-        &self,
-        query: &str,
-        learning: &str,
-    ) -> Result<Task, ServiceError> {
+    /// Records a learning entry (not tied to any specific task).
+    pub fn add_learning(&self, learning: &str) -> Result<(), ServiceError> {
         self.storage.require_layout()?;
         let normalized = normalize_escaped_newlines(learning);
         let learning_lines = parse_learning_lines(&normalized).map_err(validation_error)?;
 
-        let task = self.resolve_task(query)?;
+        self.storage.append_learning(Utc::now(), &learning_lines)?;
 
-        if task.status != TaskStatus::Done {
-            return Err(ServiceError::ValidationError(
-                "learning can only be added to a done task".to_string(),
-            ));
-        }
-
-        self.storage
-            .append_learning(Utc::now(), &task.title, &learning_lines)?;
-
-        Ok(task)
+        Ok(())
     }
 
     /// Returns pending learnings plus the prompt instructions for processing them.
@@ -46,7 +33,6 @@ impl TaskService {
             entries: entries
                 .into_iter()
                 .map(|entry| LearnEntry {
-                    title: entry.task_title,
                     date: entry.timestamp.date_naive().to_string(),
                     learnings: entry.lines.join("\n"),
                 })

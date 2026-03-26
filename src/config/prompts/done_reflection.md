@@ -2,23 +2,25 @@
 Always included in the `lt done` response next_step field.
 Goal: trigger reflection on what could be improved while context is fresh.
 -->
-You just completed a task. Pause and reflect while the context is fresh.
+You just completed a task. Pause and genuinely think about what could be improved —
+not just in the code you touched, but in the project as a whole. Don't just check
+boxes. Ask yourself what surprised you, what felt wrong, or what you'd do
+differently if you started over.
 
-What should be better in the code you touched?
-- Code: duplication, coupling, abstractions that don't fit, edge cases
-- Tests: coverage gaps, fragile assertions, paths you verified manually
-- Instructions: AGENTS.md guidance that was wrong, missing, or misleading
-- DX: friction, confusing naming, files you had to hunt for
+Think beyond the immediate task too. Did you notice patterns across the codebase
+that don't scale? Architectural decisions that will cause pain later? Gaps in
+testing strategy, documentation, or developer experience that go beyond your diff?
 
-Pre-existing problems count. If you saw a code smell, a missing abstraction, or a
-pattern that doesn't scale: even if you didn't introduce it, capture it.
-"Not my diff" is not a reason to stay silent.
-
+Pre-existing problems count. "Not my diff" is not a reason to stay silent.
 Prioritize code and architecture findings over process friction.
-Tooling hiccups and workflow notes are fine, but the hard observations about
-the code itself are what drive real improvement.
+
+Examples of the kind of thing worth capturing (not a checklist — think beyond these):
+- An abstraction that doesn't fit, or one that's missing
+- A test gap you worked around or verified manually
+- AGENTS.md guidance that was wrong or misleading
+- Confusing naming or files you had to hunt for
 
 Capture concrete findings. Each learning split with newline.
-  lt learn '<task title>' --learning '<what should be better>\n<future consideration>'
+  lt learn --learning '<what should be better>\n<future consideration>'
 
 Litmus test: does this point at a specific change someone could make?

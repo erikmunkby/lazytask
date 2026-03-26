@@ -114,7 +114,7 @@ Use `lt init --upgrade` after installing a new lazytask version to refresh gener
 
 ### AI commands
 
-All AI commands return a consistent JSON envelope: `{"ok": bool, "data": ...}` or `{"ok": false, "error": {...}}`.
+All AI commands return small token-efficient JSON: `{"ok": bool, "data": ...}` or `{"ok": false, "error": {...}}`.
 
 | Command | Description |
 |---|---|
@@ -124,7 +124,7 @@ All AI commands return a consistent JSON envelope: `{"ok": bool, "data": ...}` o
 | `lt start <query>` | Move task to in-progress |
 | `lt done <query>` | Complete task (returns reflection prompt) |
 | `lt discard <query> --discard-note '...'` | Discard a task |
-| `lt learn <query> --learning '...'` | Record a learning for a done task |
+| `lt learn --learning '...'` | Record a learning |
 | `lt learn --review` | Distill learnings into improvements |
 
 ## Configuration
