@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.4.1...lazytask-v0.4.2) (2026-03-26)
+
+
+### Bug Fixes
+
+* **cli:** decouple learnings from tasks and improve reflection prompt ([c5df97f](https://github.com/erikmunkby/lazytask/commit/c5df97fdf04a00e1954e2f223322771cef935faa))
+
 ## [0.4.1](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.4.0...lazytask-v0.4.1) (2026-03-25)
 
 
