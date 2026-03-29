@@ -56,23 +56,16 @@ fn generate_filename() -> String {
 
 /// Deletes asset files referenced in task details via markdown image links.
 ///
-/// Only deletes files that actually reside inside `.tasks/assets/` after
-/// canonicalization, preventing path-traversal attacks.
+/// Path traversal is prevented at the regex level: `extract_asset_filenames`
+/// only captures bare filenames (no `/` allowed), so joined paths always
+/// stay inside `.tasks/assets/`.
 pub fn cleanup_task_assets(tasks_root: &Path, details: &str) {
     let assets_dir = tasks_root.join("assets");
-    if !assets_dir.is_dir() {
-        return;
-    }
 
     for filename in extract_asset_filenames(details) {
         let path = assets_dir.join(&filename);
-        // Canonicalize to prevent traversal (e.g. `../../README.md`)
-        if let Ok(canonical) = path.canonicalize()
-            && let Ok(canonical_assets) = assets_dir.canonicalize()
-            && canonical.starts_with(&canonical_assets)
-            && canonical.is_file()
-        {
-            let _ = fs::remove_file(canonical);
+        if path.is_file() {
+            let _ = fs::remove_file(&path);
         }
     }
 }
@@ -136,5 +129,22 @@ mod tests {
     fn ignores_old_format_without_dotdot() {
         let details = "![x](assets/img.png)";
         assert!(extract_asset_filenames(details).is_empty());
+    }
+
+    #[test]
+    fn cleanup_deletes_referenced_asset_file() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let tasks_root = tmp.path();
+        let assets_dir = tasks_root.join("assets");
+        fs::create_dir_all(&assets_dir).unwrap();
+
+        let img_path = assets_dir.join("test-img.png");
+        fs::write(&img_path, b"fake png").unwrap();
+        assert!(img_path.exists());
+
+        let details = "some text ![image](../assets/test-img.png) end";
+        cleanup_task_assets(tasks_root, details);
+
+        assert!(!img_path.exists(), "image file should have been deleted");
     }
 }
