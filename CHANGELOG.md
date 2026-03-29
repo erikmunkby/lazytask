@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.4.2...lazytask-v0.5.0) (2026-03-29)
+
+
+### Features
+
+* **tui:** add clipboard image paste and text paste via Ctrl+V ([ea3a939](https://github.com/erikmunkby/lazytask/commit/ea3a939c2301a51a8c3101672d1f1c6832755386))
+
+
+### Bug Fixes
+
+* **tui:** clean up orphaned assets on quit and undo overwrite ([6e063e0](https://github.com/erikmunkby/lazytask/commit/6e063e06a62b6dba2396159246ec28ef3cd2fcf7))
+* **tui:** simplify asset cleanup and add integration test ([3b33797](https://github.com/erikmunkby/lazytask/commit/3b3379768caba8155f4469b1be5345d745afe93a))
+
 ## [0.4.2](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.4.1...lazytask-v0.4.2) (2026-03-26)
 
 
