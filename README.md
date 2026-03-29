@@ -46,7 +46,7 @@ lazytask has two interfaces that share the same storage:
 |---|---|---|
 | **Interface** | Keyboard-driven TUI | Strict CLI with JSON envelopes |
 | **Launch** | `lt` | `lt list`, `lt create`, ... |
-| **Workflow** | Navigate, create, move tasks | Create, start, complete tasks, capture learnings |
+| **Workflow** | Navigate, create, move tasks, paste images | Create, start, complete tasks, capture learnings |
 
 Tasks flow through directories. What you see in your file tree *is* the state:
 
@@ -140,7 +140,8 @@ in_progress = 3    # max tasks in progress
 learn_threshold = 35
 
 [retention]
-done_discard_ttl_days = 3 # auto-delete done/discard tasks older than this many days
+done_discard_ttl_days = 3    # auto-delete done/discard tasks older than this many days
+cleanup_task_assets = true   # delete referenced images when a task is deleted
 ```
 
 ## Acknowledgements
