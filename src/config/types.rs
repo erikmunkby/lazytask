@@ -21,6 +21,7 @@ pub struct HintsConfig {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RetentionConfig {
     pub done_discard_ttl_days: usize,
+    pub cleanup_task_assets: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

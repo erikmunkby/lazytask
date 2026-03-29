@@ -1,4 +1,5 @@
 use crate::domain::TaskType;
+use crate::tui::app::CreateState;
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -32,6 +33,9 @@ pub enum Action {
     },
     UpdateAvailable {
         version: String,
+    },
+    PasteClipboard {
+        create: CreateState,
     },
     Quit,
 }

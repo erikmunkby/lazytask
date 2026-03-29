@@ -51,6 +51,11 @@ impl App {
             return;
         }
 
+        if ctrl && key.code == KeyCode::Char('v') {
+            self.dispatch(Action::PasteClipboard { create });
+            return;
+        }
+
         if ctrl && (key.code == KeyCode::Char('s') || key.code == KeyCode::Enter) {
             if create.title.trim().len() > TITLE_CHAR_LIMIT {
                 self.push_log("title must be at most 50 characters".to_string(), true);

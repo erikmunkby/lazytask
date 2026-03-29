@@ -271,7 +271,7 @@ fn delete_terminal_tasks_updated_before_removes_only_expired_done_and_discard() 
     let deleted = storage
         .delete_terminal_tasks_updated_before(cutoff)
         .unwrap();
-    assert_eq!(deleted, 2);
+    assert_eq!(deleted.len(), 2);
 
     assert!(!temp.path().join(".tasks/done/done-old.md").exists());
     assert!(!temp.path().join(".tasks/discard/discard-old.md").exists());
@@ -293,5 +293,5 @@ fn delete_terminal_tasks_updated_before_is_noop_when_tasks_root_missing() {
     let deleted = storage
         .delete_terminal_tasks_updated_before(cutoff)
         .unwrap();
-    assert_eq!(deleted, 0);
+    assert!(deleted.is_empty());
 }

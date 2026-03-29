@@ -67,6 +67,21 @@ impl CreateState {
         }
     }
 
+    /// Inserts a string at the current cursor position in the active text field.
+    pub(super) fn insert_str(&mut self, s: &str) {
+        match self.active_field {
+            CreateField::Title => {
+                self.title.insert_str(self.cursor_pos, s);
+                self.cursor_pos += s.len();
+            }
+            CreateField::Type => {}
+            CreateField::Details => {
+                self.details.insert_str(self.cursor_pos, s);
+                self.cursor_pos += s.len();
+            }
+        }
+    }
+
     /// Inserts a character or toggles task type when the type field is active.
     pub(super) fn insert_char(&mut self, ch: char) {
         match self.active_field {

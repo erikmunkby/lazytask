@@ -144,6 +144,10 @@ impl TaskService {
     }
 
     /// Deletes a resolved task file from its current bucket.
+    ///
+    /// Does **not** clean up referenced assets automatically because TUI deletes
+    /// support undo. Callers that perform permanent deletion (e.g. TTL cleanup,
+    /// discarded-task delete) should call `maybe_cleanup_task_assets` explicitly.
     pub fn delete_task(&self, query: &str) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
         let task = self.resolve_task(query)?;
@@ -153,6 +157,8 @@ impl TaskService {
     }
 
     /// Deletes a task by exact identity without query resolution.
+    ///
+    /// See `delete_task` for asset-cleanup policy.
     pub fn delete_task_exact(&self, task: &Task) -> Result<Task, ServiceError> {
         self.storage.require_layout()?;
         self.storage.delete_task(task)?;
@@ -210,6 +216,13 @@ impl TaskService {
     pub(crate) fn resolve_task(&self, query: &str) -> Result<Task, ServiceError> {
         let all = self.storage.list_tasks(None, None)?;
         resolve_query(&all, query)
+    }
+
+    /// Deletes asset files referenced by a task when cleanup is enabled in config.
+    pub(crate) fn maybe_cleanup_task_assets(&self, task: &Task) {
+        if self.config.retention.cleanup_task_assets {
+            super::clipboard::cleanup_task_assets(&self.storage.tasks_root(), &task.details);
+        }
     }
 
     /// Enforces configured WIP limits for todo and in-progress buckets.

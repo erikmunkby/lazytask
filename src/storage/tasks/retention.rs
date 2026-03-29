@@ -1,4 +1,4 @@
-use crate::domain::TaskStatus;
+use crate::domain::{Task, TaskStatus};
 use crate::storage::{Storage, StorageError};
 use chrono::{DateTime, Utc};
 use std::fs;
@@ -6,16 +6,17 @@ use std::fs;
 impl Storage {
     /// Deletes `done` and `discard` tasks whose `updated_at` is at or before `cutoff`.
     ///
-    /// Active buckets are never touched.
+    /// Active buckets are never touched. Returns the deleted tasks so callers can
+    /// perform additional cleanup (e.g. removing referenced asset files).
     pub fn delete_terminal_tasks_updated_before(
         &self,
         cutoff: DateTime<Utc>,
-    ) -> Result<usize, StorageError> {
+    ) -> Result<Vec<Task>, StorageError> {
         if !self.tasks_root().exists() {
-            return Ok(0);
+            return Ok(Vec::new());
         }
 
-        let mut deleted = 0;
+        let mut deleted = Vec::new();
         for status in [TaskStatus::Done, TaskStatus::Discard] {
             let bucket = self.bucket_path(status);
             if !bucket.is_dir() {
@@ -35,7 +36,7 @@ impl Storage {
                 let task = self.parse_task_file(&path, status)?;
                 if task.updated_at <= cutoff {
                     fs::remove_file(path)?;
-                    deleted += 1;
+                    deleted.push(task);
                 }
             }
         }
