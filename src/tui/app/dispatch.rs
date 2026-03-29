@@ -227,7 +227,13 @@ impl App {
                 }
                 self.state.mode = Mode::Creating(create);
             }
-            Action::Quit => self.state.should_quit = true,
+            Action::Quit => {
+                // Clean assets for any undo-pending task before exit.
+                if let Some(prev) = self.state.last_deleted.take() {
+                    self.service.maybe_cleanup_task_assets(&prev);
+                }
+                self.state.should_quit = true;
+            }
         }
     }
 
