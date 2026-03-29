@@ -1,3 +1,4 @@
+mod clipboard;
 mod editor;
 mod errors;
 mod learning;
@@ -9,6 +10,7 @@ use crate::config::AppConfig;
 use crate::storage::Storage;
 use serde::Serialize;
 
+pub use clipboard::PasteResult;
 pub use errors::ServiceError;
 
 #[derive(Debug, Clone)]
@@ -45,6 +47,11 @@ impl TaskService {
             storage: Storage::from_app_config(&config),
             config,
         }
+    }
+
+    /// Reads the system clipboard and saves any image as PNG under `.tasks/assets/`.
+    pub fn paste_from_clipboard(&self) -> Result<PasteResult, ServiceError> {
+        clipboard::paste_from_clipboard(&self.storage.tasks_root())
     }
 }
 

@@ -93,7 +93,15 @@ pub(crate) fn render_default_config_body() -> String {
                 key.name, key.default, key.description
             ));
         }
+        // Append boolean keys that live outside the usize-only schema.
+        if section.name == "retention" {
+            body.push_str(RETENTION_CLEANUP_ASSETS_LINE);
+        }
     }
 
     body
 }
+
+/// Default line for the `cleanup_task_assets` boolean key in `[retention]`.
+const RETENTION_CLEANUP_ASSETS_LINE: &str =
+    "cleanup_task_assets = true # delete referenced images when a task is deleted\n";

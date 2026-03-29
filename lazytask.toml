@@ -7,6 +7,7 @@ learn_threshold = 35 # show `lt learn` hint after this many LEARNINGS.md lines
 
 [retention]
 done_discard_ttl_days = 3 # auto-delete done/discard tasks older than this many days
+cleanup_task_assets = true # delete referenced images when a task is deleted
 
 [prompts]
 # Shown after `lt done` to trigger reflection while context is fresh.

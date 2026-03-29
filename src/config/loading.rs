@@ -38,6 +38,7 @@ struct UserHintsConfig {
 #[derive(Debug, Deserialize)]
 struct UserRetentionConfig {
     done_discard_ttl_days: Option<usize>,
+    cleanup_task_assets: Option<bool>,
 }
 
 /// Loads app config by resolving the workspace root from the current directory.
@@ -79,6 +80,11 @@ pub fn load_for_workspace_root(workspace_root: impl AsRef<Path>) -> Result<AppCo
             .as_ref()
             .and_then(|retention| retention.done_discard_ttl_days)
             .unwrap_or(default_usize("retention", "done_discard_ttl_days")),
+        cleanup_task_assets: user
+            .retention
+            .as_ref()
+            .and_then(|retention| retention.cleanup_task_assets)
+            .unwrap_or(true),
     };
 
     let prompt_overrides = PromptOverrides {
@@ -151,6 +157,14 @@ fn backfill_missing_keys(source: &str) -> Result<Option<String>, ConfigError> {
             for key in section.keys {
                 insert_default_key(&mut table, key);
             }
+            if section.name == "retention" {
+                insert_bool_key(
+                    &mut table,
+                    "cleanup_task_assets",
+                    true,
+                    "delete referenced images when a task is deleted",
+                );
+            }
             document.insert(section.name, Item::Table(table));
             changed = true;
             continue;
@@ -171,6 +185,17 @@ fn backfill_missing_keys(source: &str) -> Result<Option<String>, ConfigError> {
                 insert_default_key(section_table, key);
                 changed = true;
             }
+        }
+
+        // Backfill boolean keys that live outside the usize-only schema.
+        if section.name == "retention" && !section_table.contains_key("cleanup_task_assets") {
+            insert_bool_key(
+                section_table,
+                "cleanup_task_assets",
+                true,
+                "delete referenced images when a task is deleted",
+            );
+            changed = true;
         }
     }
 
@@ -204,6 +229,16 @@ fn insert_default_key(table: &mut (impl TableLike + ?Sized), key: &ConfigKeySche
         value
             .decor_mut()
             .set_suffix(format!(" # {}", key.description));
+    }
+}
+
+/// Inserts a boolean key with an inline description comment.
+fn insert_bool_key(table: &mut (impl TableLike + ?Sized), name: &str, default: bool, desc: &str) {
+    table.insert(name, value(default));
+    if let Some(item) = table.get_mut(name)
+        && let Some(v) = item.as_value_mut()
+    {
+        v.decor_mut().set_suffix(format!(" # {desc}"));
     }
 }
 

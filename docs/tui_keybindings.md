@@ -17,6 +17,7 @@
 
 - `Tab` or Arrow up/down: switch field
 - `Enter`: next field (`Title`/`Type`) or newline (`Details`)
+- `Ctrl+V`: paste from clipboard (image saved as PNG, or text)
 - `Ctrl+S` or `Ctrl+Enter`: save
 - `Esc`: cancel and return to normal mode
 

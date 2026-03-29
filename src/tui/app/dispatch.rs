@@ -1,7 +1,7 @@
 use super::{App, CreateState, LOG_CAPACITY, LogEntry, Mode};
 use crate::domain::{Task, TaskStatus};
-use crate::services::CreateTaskInput;
-use crate::tui::actions::Action;
+use crate::services::{CreateTaskInput, PasteResult};
+use crate::tui::actions::{Action, CreateField};
 use chrono::Local;
 
 impl App {
@@ -96,9 +96,16 @@ impl App {
             },
             Action::DeleteSelected => {
                 if let Some(task) = self.selected_task().cloned() {
+                    // Clean assets for the previously undo-able task that is
+                    // about to be permanently lost (overwritten by this delete).
+                    if let Some(prev) = self.state.last_deleted.take() {
+                        self.service.maybe_cleanup_task_assets(&prev);
+                    }
                     match self.service.delete_task_exact(&task) {
                         Ok(_) => {
                             if task.status == TaskStatus::Discard {
+                                // Discarded deletes are permanent — clean assets now.
+                                self.service.maybe_cleanup_task_assets(&task);
                                 self.state.last_deleted = None;
                                 self.dispatch(Action::TaskOperationSucceeded {
                                     message: format!("discarded task \"{}\" deleted", task.title),
@@ -199,6 +206,27 @@ impl App {
                 ),
                 false,
             ),
+            Action::PasteClipboard { mut create } => {
+                match self.service.paste_from_clipboard() {
+                    Ok(PasteResult::Image { markdown }) => {
+                        if create.active_field != CreateField::Details {
+                            create.switch_to(CreateField::Details);
+                        }
+                        create.insert_str(&markdown);
+                        self.push_log("image pasted from clipboard".to_string(), false);
+                    }
+                    Ok(PasteResult::Text(text)) => {
+                        create.insert_str(&text);
+                    }
+                    Ok(PasteResult::Empty) => {
+                        self.push_log("clipboard is empty".to_string(), false);
+                    }
+                    Err(err) => {
+                        self.push_log(format!("paste failed: {err}"), true);
+                    }
+                }
+                self.state.mode = Mode::Creating(create);
+            }
             Action::Quit => self.state.should_quit = true,
         }
     }
