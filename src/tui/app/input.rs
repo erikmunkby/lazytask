@@ -25,6 +25,8 @@ impl App {
             KeyCode::Char('u') => self.dispatch(Action::UndoDelete),
             KeyCode::Char('s') => self.dispatch(Action::StartSelected),
             KeyCode::Char('x') => self.dispatch(Action::DoneSelected),
+            KeyCode::Char('y') => self.dispatch(Action::CopySelectedTitle),
+            KeyCode::Char('Y') => self.dispatch(Action::CopySelectedFull),
             KeyCode::Char('o') => self.dispatch(Action::OpenSelectedInEditor),
             KeyCode::Char('?') => self.state.mode = Mode::Keybindings,
             KeyCode::Char('q') | KeyCode::Esc => self.dispatch(Action::Quit),
@@ -45,6 +47,7 @@ impl App {
     /// Handles create/edit modal text editing, navigation, and submit shortcuts.
     fn on_key_creating(&mut self, key: KeyEvent, mut create: CreateState) {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+        let alt = key.modifiers.contains(KeyModifiers::ALT);
 
         if ctrl && key.code == KeyCode::Char('c') {
             self.dispatch(Action::Quit);
@@ -53,6 +56,12 @@ impl App {
 
         if ctrl && key.code == KeyCode::Char('v') {
             self.dispatch(Action::PasteClipboard { create });
+            return;
+        }
+
+        if ctrl && key.code == KeyCode::Char('u') {
+            create.delete_to_line_start();
+            self.state.mode = Mode::Creating(create);
             return;
         }
 
@@ -93,12 +102,32 @@ impl App {
                 create.switch_to(prev);
                 self.state.mode = Mode::Creating(create);
             }
+            KeyCode::Left if alt => {
+                create.move_cursor_word_left();
+                self.state.mode = Mode::Creating(create);
+            }
             KeyCode::Left => {
                 create.move_cursor_left();
                 self.state.mode = Mode::Creating(create);
             }
+            KeyCode::Right if alt => {
+                create.move_cursor_word_right();
+                self.state.mode = Mode::Creating(create);
+            }
             KeyCode::Right => {
                 create.move_cursor_right();
+                self.state.mode = Mode::Creating(create);
+            }
+            KeyCode::Home => {
+                create.move_cursor_home();
+                self.state.mode = Mode::Creating(create);
+            }
+            KeyCode::End => {
+                create.move_cursor_end();
+                self.state.mode = Mode::Creating(create);
+            }
+            KeyCode::Backspace if alt => {
+                create.delete_word_backward();
                 self.state.mode = Mode::Creating(create);
             }
             KeyCode::Backspace => {

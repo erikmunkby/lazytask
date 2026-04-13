@@ -37,6 +37,8 @@ pub enum Action {
     PasteClipboard {
         create: CreateState,
     },
+    CopySelectedTitle,
+    CopySelectedFull,
     Quit,
 }
 

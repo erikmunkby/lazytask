@@ -227,6 +227,26 @@ impl App {
                 }
                 self.state.mode = Mode::Creating(create);
             }
+            Action::CopySelectedTitle => {
+                if let Some(task) = self.selected_task() {
+                    let title = task.title.clone();
+                    match self.service.copy_to_clipboard(&title) {
+                        Ok(()) => self.push_log("copied title".to_string(), false),
+                        Err(err) => self.push_log(format!("copy failed: {err}"), true),
+                    }
+                }
+            }
+            Action::CopySelectedFull => {
+                if let Some(task) = self.selected_task() {
+                    match self.service.read_task_content(task) {
+                        Ok(content) => match self.service.copy_to_clipboard(&content) {
+                            Ok(()) => self.push_log("copied task".to_string(), false),
+                            Err(err) => self.push_log(format!("copy failed: {err}"), true),
+                        },
+                        Err(err) => self.push_log(format!("read failed: {err}"), true),
+                    }
+                }
+            }
             Action::Quit => {
                 // Clean assets for any undo-pending task before exit.
                 if let Some(prev) = self.state.last_deleted.take() {

@@ -31,6 +31,8 @@ fn keybinding_lines() -> Vec<&'static str> {
         "Open: o",
         "Delete: d",
         "Undo delete: u",
+        "Copy title: y",
+        "Copy full task: Y",
         "Quit: q (or Esc)",
         "",
         "Close: ? (or Esc)",

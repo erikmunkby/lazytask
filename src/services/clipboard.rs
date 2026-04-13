@@ -54,6 +54,15 @@ fn generate_filename() -> String {
         .to_string()
 }
 
+/// Copies the given text to the system clipboard.
+pub fn copy_to_clipboard(text: &str) -> Result<(), ServiceError> {
+    let mut clipboard =
+        arboard::Clipboard::new().map_err(|e| ServiceError::Io(format!("clipboard: {e}")))?;
+    clipboard
+        .set_text(text)
+        .map_err(|e| ServiceError::Io(format!("clipboard set: {e}")))
+}
+
 /// Deletes asset files referenced in task details via markdown image links.
 ///
 /// Path traversal is prevented at the regex level: `extract_asset_filenames`

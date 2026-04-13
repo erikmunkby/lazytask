@@ -98,7 +98,7 @@ pub(super) fn render_create_modal(frame: &mut Frame, state: &CreateState, main_a
 
     lines.push(Line::from(""));
     lines.push(Line::from(vec![Span::styled(
-        "Tab/↑↓: navigate | Enter: next | C-v: paste | C-s: save | Esc: cancel",
+        "Tab/↑↓: navigate | Enter: next | C-v: paste | C-u: clear line | C-s: save | Esc: cancel",
         hint_style,
     )]));
 

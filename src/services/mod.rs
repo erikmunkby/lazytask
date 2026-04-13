@@ -53,6 +53,11 @@ impl TaskService {
     pub fn paste_from_clipboard(&self) -> Result<PasteResult, ServiceError> {
         clipboard::paste_from_clipboard(&self.storage.tasks_root())
     }
+
+    /// Copies the given text to the system clipboard.
+    pub fn copy_to_clipboard(&self, text: &str) -> Result<(), ServiceError> {
+        clipboard::copy_to_clipboard(text)
+    }
 }
 
 #[cfg(test)]

@@ -7,6 +7,8 @@
 - `e`: edit selected task (save overwrites selected task)
 - `d`: delete selected task
 - `u`: undo the last delete in the current TUI session
+- `y`: copy selected task title to clipboard
+- `Y` (Shift+y): copy full task (title, status, type, details) to clipboard
 - `s`: move selected task to `in-progress`
 - `x`: move selected task to `done`
 - `o`: open selected task file in editor
@@ -17,6 +19,12 @@
 
 - `Tab` or Arrow up/down: switch field
 - `Enter`: next field (`Title`/`Type`) or newline (`Details`)
+- Left/Right arrows: move cursor
+- `Alt+Left`/`Alt+Right`: move cursor by word
+- `Home`/`End`: jump to start/end of line
+- `Backspace`: delete character
+- `Alt+Backspace`: delete word backward
+- `Ctrl+U`: delete to start of line
 - `Ctrl+V`: paste from clipboard (image saved as PNG, or text)
 - `Ctrl+S` or `Ctrl+Enter`: save
 - `Esc`: cancel and return to normal mode
