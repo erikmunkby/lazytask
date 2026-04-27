@@ -19,10 +19,33 @@ impl TaskService {
 
     /// Bootstraps workspace state and optionally rewrites generated defaults.
     pub fn init_with_upgrade(&self, upgrade: bool) -> Result<(), ServiceError> {
-        config::ensure_default_file_with_upgrade(&self.config, upgrade)?;
-        self.storage.ensure_layout()?;
+        self.init_storage_with_upgrade(upgrade)?;
         self.storage
             .ensure_agent_prompt_guidance_with_upgrade(upgrade)?;
+        Ok(())
+    }
+
+    /// Init config + layout only, without agent guidance.
+    pub fn init_storage_with_upgrade(&self, upgrade: bool) -> Result<(), ServiceError> {
+        self.ensure_workspace_dir()?;
+        config::ensure_default_file_with_upgrade(&self.config, upgrade)?;
+        self.storage.ensure_layout()?;
+        Ok(())
+    }
+
+    /// Write agent guidance to an arbitrary root (e.g. the git repo root when
+    /// LAZYTASK_DIR points elsewhere).
+    pub fn ensure_agent_guidance_at(
+        &self,
+        root: &std::path::Path,
+        upgrade: bool,
+    ) -> Result<(), ServiceError> {
+        let alt_storage = crate::storage::Storage::from_path(
+            root.to_path_buf(),
+            self.config.storage_layout,
+            self.config.prompts,
+        );
+        alt_storage.ensure_agent_prompt_guidance_with_upgrade(upgrade)?;
         Ok(())
     }
 
@@ -223,6 +246,11 @@ impl TaskService {
         if self.config.retention.cleanup_task_assets {
             super::clipboard::cleanup_task_assets(&self.storage.tasks_root(), &task.details);
         }
+    }
+
+    fn ensure_workspace_dir(&self) -> Result<(), ServiceError> {
+        std::fs::create_dir_all(&self.config.workspace_root)
+            .map_err(|e| ServiceError::Io(e.to_string()))
     }
 
     /// Enforces configured WIP limits for todo and in-progress buckets.

@@ -4,8 +4,8 @@ mod schema;
 mod types;
 
 pub use loading::{
-    ensure_default_file, ensure_default_file_with_upgrade, load_for_workspace_root,
-    load_from_current_dir,
+    ResolvedWorkspace, WorkspaceSource, ensure_default_file, ensure_default_file_with_upgrade,
+    find_git_root, load_for_workspace_root, load_from_current_dir, resolve_workspace,
 };
 pub use prompts::{PromptConfig, markdown_for_key, resolve_done_reflection};
 pub use types::{

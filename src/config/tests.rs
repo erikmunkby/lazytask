@@ -1,5 +1,6 @@
 use super::*;
 use crate::config::schema::default_usize;
+use loading::{WorkspaceSource, resolve_workspace_from};
 use std::fs;
 use tempfile::TempDir;
 
@@ -93,7 +94,8 @@ fn workspace_root_rules_drive_config_path() {
     fs::create_dir_all(root.join(".git")).unwrap();
     fs::create_dir_all(root.join("nested/deep")).unwrap();
 
-    let discovered_root = loading::find_workspace_root(&root.join("nested/deep"));
+    let resolved = resolve_workspace_from(&root.join("nested/deep"), None).unwrap();
+    let discovered_root = resolved.root;
     let config = load_for_workspace_root(discovered_root).unwrap();
 
     assert_eq!(config.config_path(), root.join("lazytask.toml"));
@@ -215,4 +217,139 @@ fn backfill_preserves_custom_done_reflection_prompt() {
     let body = fs::read_to_string(temp.path().join("lazytask.toml")).unwrap();
     assert!(body.contains("Custom prompt"));
     assert!(body.contains("[prompts]"));
+}
+
+#[test]
+fn resolve_workspace_from_env_override_absolute() {
+    let temp = TempDir::new().unwrap();
+    let target = temp.path().join("custom");
+    let resolved =
+        resolve_workspace_from(temp.path(), Some(target.to_str().unwrap().to_string())).unwrap();
+    assert_eq!(resolved.root, target);
+    assert_eq!(resolved.source, WorkspaceSource::EnvOverride);
+}
+
+#[test]
+fn resolve_workspace_from_env_override_relative() {
+    let temp = TempDir::new().unwrap();
+    let resolved = resolve_workspace_from(temp.path(), Some("relative-dir".to_string())).unwrap();
+    assert_eq!(resolved.root, temp.path().join("relative-dir"));
+    assert_eq!(resolved.source, WorkspaceSource::EnvOverride);
+}
+
+#[test]
+fn resolve_workspace_from_git_root() {
+    let temp = TempDir::new().unwrap();
+    let root = temp.path().join("repo");
+    fs::create_dir_all(root.join(".git")).unwrap();
+    fs::create_dir_all(root.join("nested/deep")).unwrap();
+
+    let resolved = resolve_workspace_from(&root.join("nested/deep"), None).unwrap();
+    assert_eq!(resolved.root, root);
+    assert_eq!(resolved.source, WorkspaceSource::GitRoot);
+}
+
+#[test]
+fn resolve_workspace_from_worktree() {
+    let temp = TempDir::new().unwrap();
+    let main_root = temp.path().join("main-repo");
+    let main_git = main_root.join(".git");
+    fs::create_dir_all(main_git.join("worktrees/feature-branch")).unwrap();
+
+    let wt_root = temp.path().join("worktree-checkout");
+    fs::create_dir_all(&wt_root).unwrap();
+    let gitdir_path = main_git.join("worktrees/feature-branch");
+    fs::write(
+        wt_root.join(".git"),
+        format!("gitdir: {}", gitdir_path.display()),
+    )
+    .unwrap();
+
+    let resolved = resolve_workspace_from(&wt_root, None).unwrap();
+    assert_eq!(resolved.root, main_root.canonicalize().unwrap());
+    assert_eq!(resolved.source, WorkspaceSource::GitWorktree);
+}
+
+#[test]
+fn resolve_workspace_from_no_git_falls_back_to_cwd() {
+    let temp = TempDir::new().unwrap();
+    let resolved = resolve_workspace_from(temp.path(), None).unwrap();
+    assert_eq!(resolved.root, temp.path());
+    assert_eq!(resolved.source, WorkspaceSource::Cwd);
+}
+
+#[test]
+fn find_git_root_returns_none_when_no_git() {
+    let temp = TempDir::new().unwrap();
+    assert!(loading::find_git_root(temp.path()).is_none());
+}
+
+#[test]
+fn find_git_root_returns_some_for_git_dir() {
+    let temp = TempDir::new().unwrap();
+    let root = temp.path().join("repo");
+    fs::create_dir_all(root.join(".git")).unwrap();
+    fs::create_dir_all(root.join("sub")).unwrap();
+
+    assert_eq!(loading::find_git_root(&root.join("sub")), Some(root));
+}
+
+#[test]
+fn find_git_root_returns_main_root_for_worktree() {
+    let temp = TempDir::new().unwrap();
+    let main_root = temp.path().join("main");
+    fs::create_dir_all(main_root.join(".git/worktrees/wt1")).unwrap();
+
+    let wt = temp.path().join("wt");
+    fs::create_dir_all(&wt).unwrap();
+    fs::write(
+        wt.join(".git"),
+        format!("gitdir: {}", main_root.join(".git/worktrees/wt1").display()),
+    )
+    .unwrap();
+
+    assert_eq!(
+        loading::find_git_root(&wt),
+        Some(main_root.canonicalize().unwrap())
+    );
+}
+
+#[test]
+fn resolve_worktree_malformed_git_file_returns_none() {
+    let temp = TempDir::new().unwrap();
+    let git_file = temp.path().join(".git");
+    fs::write(&git_file, "not a valid gitdir line").unwrap();
+
+    assert!(loading::resolve_worktree_main_root(&git_file).is_none());
+}
+
+#[test]
+fn resolve_worktree_relative_gitdir() {
+    let temp = TempDir::new().unwrap();
+    let main_root = temp.path().join("main");
+    fs::create_dir_all(main_root.join(".git/worktrees/feat")).unwrap();
+
+    let wt = main_root.join("worktrees/feat-checkout");
+    fs::create_dir_all(&wt).unwrap();
+    fs::write(wt.join(".git"), "gitdir: ../../.git/worktrees/feat").unwrap();
+
+    let result = loading::resolve_worktree_main_root(&wt.join(".git"));
+    assert_eq!(result, Some(main_root.canonicalize().unwrap()));
+}
+
+#[test]
+fn resolve_worktree_bare_repo_returns_none() {
+    let temp = TempDir::new().unwrap();
+    let bare = temp.path().join("repo.git");
+    fs::create_dir_all(bare.join("worktrees/feat")).unwrap();
+
+    let wt = temp.path().join("wt");
+    fs::create_dir_all(&wt).unwrap();
+    fs::write(
+        wt.join(".git"),
+        format!("gitdir: {}", bare.join("worktrees/feat").display()),
+    )
+    .unwrap();
+
+    assert!(loading::resolve_worktree_main_root(&wt.join(".git")).is_none());
 }
