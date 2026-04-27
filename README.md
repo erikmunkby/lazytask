@@ -144,6 +144,26 @@ done_discard_ttl_days = 3    # auto-delete done/discard tasks older than this ma
 cleanup_task_assets = true   # delete referenced images when a task is deleted
 ```
 
+### Custom task directory
+
+Set `LAZYTASK_DIR` to decouple the `.tasks/` directory and `lazytask.toml` from the git root:
+
+```sh
+export LAZYTASK_DIR=/path/to/custom/dir
+lt init
+```
+
+Relative paths resolve against the current working directory, making it work well with [direnv](https://direnv.net/):
+
+```sh
+# .envrc
+export LAZYTASK_DIR=.lazytask
+```
+
+### Git worktrees
+
+lazytask automatically detects git worktrees and resolves back to the main repository root. Tasks are shared across all worktrees with no configuration needed.
+
 ## Acknowledgements
 
 lazytask's TUI is built with [ratatui](https://github.com/ratatui/ratatui), and its TUI UX draws heavy inspiration from [lazygit](https://github.com/jesseduffield/lazygit).
