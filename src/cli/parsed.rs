@@ -31,14 +31,53 @@ pub(super) fn run_parsed(cli: Cli) -> Result<()> {
             }
         }
         Some(Commands::Init { upgrade }) => {
-            let runtime = load_runtime().map_err(anyhow::Error::from)?;
-            runtime
-                .service
-                .init_with_upgrade(upgrade)
-                .map_err(anyhow::Error::from)?;
+            let resolved = config::resolve_workspace().map_err(anyhow::Error::from)?;
+            let app_config =
+                config::load_for_workspace_root(&resolved.root).map_err(anyhow::Error::from)?;
+            let service = TaskService::new(app_config.clone());
+
+            match resolved.source {
+                config::WorkspaceSource::EnvOverride => {
+                    service
+                        .init_storage_with_upgrade(upgrade)
+                        .map_err(anyhow::Error::from)?;
+
+                    if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
+                        let cwd = std::env::current_dir()?;
+                        if let Some(git_root) = config::find_git_root(&cwd) {
+                            let target = if git_root.join("AGENTS.md").exists() {
+                                "AGENTS.md"
+                            } else if git_root.join("CLAUDE.md").exists() {
+                                "CLAUDE.md"
+                            } else {
+                                "AGENTS.md"
+                            };
+                            eprintln!(
+                                "LAZYTASK_DIR override active. Extend {} at {} with lazytask instructions? [y/N]",
+                                target,
+                                git_root.display()
+                            );
+                            let mut answer = String::new();
+                            std::io::stdin().read_line(&mut answer)?;
+                            if answer.trim().eq_ignore_ascii_case("y") {
+                                service
+                                    .ensure_agent_guidance_at(&git_root, upgrade)
+                                    .map_err(anyhow::Error::from)?;
+                            }
+                        }
+                    }
+                }
+                _ => {
+                    service
+                        .init_with_upgrade(upgrade)
+                        .map_err(anyhow::Error::from)?;
+                }
+            }
+
             println!(
-                "initialized {} directories",
-                runtime.config.storage_layout.tasks_dir
+                "initialized {} directories at {}",
+                app_config.storage_layout.tasks_dir,
+                resolved.root.display()
             );
             Ok(())
         }

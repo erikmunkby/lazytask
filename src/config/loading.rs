@@ -11,6 +11,54 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use toml_edit::{DocumentMut, Item, Table, TableLike, value};
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WorkspaceSource {
+    GitRoot,
+    GitWorktree,
+    EnvOverride,
+    Cwd,
+}
+
+pub struct ResolvedWorkspace {
+    pub root: PathBuf,
+    pub source: WorkspaceSource,
+}
+
+/// Resolves the workspace root by checking `LAZYTASK_DIR`, then git.
+pub fn resolve_workspace() -> Result<ResolvedWorkspace, ConfigError> {
+    let current = std::env::current_dir()?;
+    resolve_workspace_from(&current, std::env::var("LAZYTASK_DIR").ok())
+}
+
+/// Pure resolver — testable without env mutation.
+pub(crate) fn resolve_workspace_from(
+    cwd: &Path,
+    lazytask_dir: Option<String>,
+) -> Result<ResolvedWorkspace, ConfigError> {
+    if let Some(dir) = lazytask_dir {
+        let path = PathBuf::from(&dir);
+        let root = if path.is_absolute() {
+            path
+        } else {
+            cwd.join(path)
+        };
+        return Ok(ResolvedWorkspace {
+            root,
+            source: WorkspaceSource::EnvOverride,
+        });
+    }
+    Ok(find_workspace_root_with_source(cwd))
+}
+
+/// Returns the git root for AGENTS.md placement, if a `.git` anchor exists.
+pub fn find_git_root(start: &Path) -> Option<PathBuf> {
+    let resolved = find_workspace_root_with_source(start);
+    match resolved.source {
+        WorkspaceSource::GitRoot | WorkspaceSource::GitWorktree => Some(resolved.root),
+        WorkspaceSource::Cwd | WorkspaceSource::EnvOverride => None,
+    }
+}
+
 #[derive(Debug, Deserialize, Default)]
 struct UserConfig {
     limits: Option<UserLimitsConfig>,
@@ -43,8 +91,8 @@ struct UserRetentionConfig {
 
 /// Loads app config by resolving the workspace root from the current directory.
 pub fn load_from_current_dir() -> Result<AppConfig, ConfigError> {
-    let current = std::env::current_dir()?;
-    load_for_workspace_root(find_workspace_root(&current))
+    let resolved = resolve_workspace()?;
+    load_for_workspace_root(resolved.root)
 }
 
 /// Loads effective config for a known workspace root.
@@ -265,21 +313,56 @@ fn validate_min(value: usize, section: &str, key: &str) -> Result<(), ConfigErro
     Ok(())
 }
 
-/// Walks up from `start` and returns the nearest ancestor containing `.git`.
-///
-/// If no git root exists, returns `start` unchanged.
-pub(crate) fn find_workspace_root(start: &Path) -> PathBuf {
+/// Walks up from `start` looking for `.git` (directory or worktree file).
+fn find_workspace_root_with_source(start: &Path) -> ResolvedWorkspace {
     let mut cursor = start.to_path_buf();
-
     loop {
-        if cursor.join(".git").exists() {
-            return cursor;
+        let git_path = cursor.join(".git");
+        if git_path.is_dir() {
+            return ResolvedWorkspace {
+                root: cursor,
+                source: WorkspaceSource::GitRoot,
+            };
         }
-
+        if git_path.is_file()
+            && let Some(main_root) = resolve_worktree_main_root(&git_path)
+        {
+            return ResolvedWorkspace {
+                root: main_root,
+                source: WorkspaceSource::GitWorktree,
+            };
+        }
         if !cursor.pop() {
             break;
         }
     }
+    ResolvedWorkspace {
+        root: start.to_path_buf(),
+        source: WorkspaceSource::Cwd,
+    }
+}
 
-    start.to_path_buf()
+/// Parses a worktree `.git` file and resolves back to the main repo root.
+pub(crate) fn resolve_worktree_main_root(git_file: &Path) -> Option<PathBuf> {
+    let content = fs::read_to_string(git_file).ok()?;
+    let gitdir = content.strip_prefix("gitdir: ")?.trim();
+    let gitdir_path = if Path::new(gitdir).is_absolute() {
+        PathBuf::from(gitdir)
+    } else {
+        git_file.parent()?.join(gitdir)
+    };
+    // Canonicalize to resolve `..` segments from relative gitdir paths.
+    let gitdir_path = gitdir_path.canonicalize().ok()?;
+    let mut ancestor = gitdir_path.as_path();
+    loop {
+        if ancestor.file_name()?.to_str()? == "worktrees" {
+            let dot_git = ancestor.parent()?;
+            // Only accept standard `.git` dirs, not bare repos (e.g. `repo.git`).
+            if dot_git.file_name()?.to_str()? != ".git" {
+                return None;
+            }
+            return dot_git.parent().map(|p| p.to_path_buf());
+        }
+        ancestor = ancestor.parent()?;
+    }
 }

@@ -919,3 +919,186 @@ fn ai_bare_learn_returns_validation_error() {
     assert!(!output.status.success());
     assert_eq!(payload["error"]["code"], "validation_error");
 }
+
+// --- LAZYTASK_DIR tests ---
+
+#[test]
+fn lazytask_dir_init_creates_layout_at_custom_dir() {
+    let temp = TempDir::new().unwrap();
+    let custom = temp.path().join("custom-tasks");
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .env("LAZYTASK_DIR", &custom)
+        .args(["init"])
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    assert!(custom.join(".tasks/todo").is_dir());
+    assert!(custom.join("lazytask.toml").exists());
+    assert!(!temp.path().join(".tasks").exists());
+}
+
+#[test]
+fn lazytask_dir_create_and_list_round_trips() {
+    let temp = TempDir::new().unwrap();
+    let custom = temp.path().join("custom-tasks");
+
+    lt_command()
+        .current_dir(temp.path())
+        .env("LAZYTASK_DIR", &custom)
+        .args(["init"])
+        .output()
+        .unwrap();
+
+    let create = lt_command()
+        .current_dir(temp.path())
+        .env("LAZYTASK_DIR", &custom)
+        .args([
+            "create",
+            "--title",
+            "Custom dir task",
+            "--type",
+            "task",
+            "--details",
+            "testing custom dir",
+        ])
+        .output()
+        .unwrap();
+    assert!(create.status.success());
+
+    let list = lt_command()
+        .current_dir(temp.path())
+        .env("LAZYTASK_DIR", &custom)
+        .args(["list"])
+        .output()
+        .unwrap();
+    let payload = parse_json(&list.stdout);
+    assert!(list.status.success());
+    assert_eq!(payload["todo"]["task"][0]["title"], "Custom dir task");
+}
+
+#[test]
+fn lazytask_dir_nonexistent_creates_directory() {
+    let temp = TempDir::new().unwrap();
+    let custom = temp.path().join("does/not/exist");
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .env("LAZYTASK_DIR", &custom)
+        .args(["init"])
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    assert!(custom.join(".tasks/todo").is_dir());
+}
+
+#[test]
+fn lazytask_dir_non_tty_init_skips_agents_md() {
+    let temp = TempDir::new().unwrap();
+    let custom = temp.path().join("custom");
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .env("LAZYTASK_DIR", &custom)
+        .args(["init"])
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    assert!(!custom.join("AGENTS.md").exists());
+    assert!(!temp.path().join("AGENTS.md").exists());
+}
+
+#[test]
+fn worktree_init_creates_tasks_at_main_repo_root() {
+    let temp = TempDir::new().unwrap();
+    let main_root = temp.path().join("main-repo");
+    fs::create_dir_all(main_root.join(".git/worktrees/feat-branch")).unwrap();
+
+    let wt = temp.path().join("worktree-checkout");
+    fs::create_dir_all(&wt).unwrap();
+    fs::write(
+        wt.join(".git"),
+        format!(
+            "gitdir: {}",
+            main_root.join(".git/worktrees/feat-branch").display()
+        ),
+    )
+    .unwrap();
+
+    let output = lt_command()
+        .current_dir(&wt)
+        .args(["init"])
+        .output()
+        .unwrap();
+
+    let canonical_main = main_root.canonicalize().unwrap();
+    assert!(output.status.success());
+    assert!(canonical_main.join(".tasks/todo").is_dir());
+    assert!(canonical_main.join("lazytask.toml").exists());
+    assert!(!wt.join(".tasks").exists());
+}
+
+#[test]
+fn lazytask_dir_relative_resolves_against_cwd() {
+    let temp = TempDir::new().unwrap();
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .env("LAZYTASK_DIR", ".lazytask")
+        .args(["init"])
+        .output()
+        .unwrap();
+
+    assert!(output.status.success());
+    assert!(temp.path().join(".lazytask/.tasks/todo").is_dir());
+    assert!(temp.path().join(".lazytask/lazytask.toml").exists());
+}
+
+#[test]
+fn lazytask_dir_relative_from_nested_dir_resolves_against_nested_cwd() {
+    let temp = TempDir::new().unwrap();
+    let nested = temp.path().join("sub/deep");
+    fs::create_dir_all(&nested).unwrap();
+
+    lt_command()
+        .current_dir(temp.path())
+        .env("LAZYTASK_DIR", ".lazytask")
+        .args(["init"])
+        .output()
+        .unwrap();
+
+    create_task_with_env(&temp, ".lazytask", "Root task");
+
+    // Running from nested dir with same relative LAZYTASK_DIR resolves to a different location
+    let list = lt_command()
+        .current_dir(&nested)
+        .env("LAZYTASK_DIR", ".lazytask")
+        .args(["list"])
+        .output()
+        .unwrap();
+
+    // The nested dir's .lazytask has no layout — confirms relative resolves against cwd
+    assert!(!list.status.success());
+}
+
+fn create_task_with_env(temp: &TempDir, lazytask_dir: &str, title: &str) {
+    let output = lt_command()
+        .current_dir(temp.path())
+        .env("LAZYTASK_DIR", lazytask_dir)
+        .args([
+            "create",
+            "--title",
+            title,
+            "--type",
+            "task",
+            "--details",
+            "test",
+        ])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+}
