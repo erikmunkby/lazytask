@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.5.0...lazytask-v0.6.0) (2026-04-28)
+
+
+### Features
+
+* **cli:** add LAZYTASK_DIR env var and git worktree support ([2eda030](https://github.com/erikmunkby/lazytask/commit/2eda0305240e2ef1108dd04fb4dd68ede9954907))
+
 ## [0.5.0](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.4.2...lazytask-v0.5.0) (2026-03-29)
 
 
