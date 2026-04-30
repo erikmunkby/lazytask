@@ -22,11 +22,31 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
+      - name: 🔍 Debug PAT permissions
+        env:
+          PAT: ${{ secrets.RELEASE_PLEASE_LAZYTASK }}
+        run: |
+          echo "=== Token scopes ==="
+          curl -sI -H "Authorization: Bearer ${PAT}" https://api.github.com/repos/erikmunkby/lazytask | grep -i "x-oauth-scopes\|x-accepted-oauth-scopes\|x-ratelimit\|status"
+          echo ""
+          echo "=== Can list releases? ==="
+          curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${PAT}" https://api.github.com/repos/erikmunkby/lazytask/releases
+          echo ""
+          echo "=== Can create release (dry-run)? ==="
+          curl -s -w "\nHTTP %{http_code}" -H "Authorization: Bearer ${PAT}" -X POST https://api.github.com/repos/erikmunkby/lazytask/releases -d '{"tag_name":"test-pat-debug","draft":true}' | head -20
+          echo ""
+          echo "=== Cleanup draft release ==="
+          RELEASE_ID=$(curl -s -H "Authorization: Bearer ${PAT}" https://api.github.com/repos/erikmunkby/lazytask/releases | jq '.[] | select(.tag_name=="test-pat-debug") | .id')
+          if [ -n "$RELEASE_ID" ]; then
+            curl -s -o /dev/null -w "Delete: %{http_code}" -H "Authorization: Bearer ${PAT}" -X DELETE "https://api.github.com/repos/erikmunkby/lazytask/releases/${RELEASE_ID}"
+            echo ""
+            curl -s -o /dev/null -w "Delete tag: %{http_code}" -H "Authorization: Bearer ${PAT}" -X DELETE "https://api.github.com/repos/erikmunkby/lazytask/git/refs/tags/test-pat-debug"
+          fi
       - name: 🏷️ Release Please
         id: release
         uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_PLEASE_LAZYTASK }}
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
 
