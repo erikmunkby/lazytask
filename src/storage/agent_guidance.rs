@@ -66,6 +66,7 @@ impl Storage {
     }
 }
 
+// Deprecated: remove after v0.7.0 once existing projects have had time to upgrade.
 const LEGACY_BLOCK_START: &str = "<EXTREMELY_IMPORTANT>";
 const LEGACY_BLOCK_END: &str = "</EXTREMELY_IMPORTANT>";
 
