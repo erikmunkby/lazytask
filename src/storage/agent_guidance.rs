@@ -66,21 +66,32 @@ impl Storage {
     }
 }
 
+const LEGACY_BLOCK_START: &str = "<EXTREMELY_IMPORTANT>";
+const LEGACY_BLOCK_END: &str = "</EXTREMELY_IMPORTANT>";
+
 /// Detects whether an existing important block already contains lazytask guidance.
 pub(crate) fn has_lazytask_important_block(
     content: &str,
     prompts: crate::config::PromptConfig,
 ) -> bool {
+    has_block_with_tags(
+        content,
+        prompts.important_block_start,
+        prompts.important_block_end,
+    ) || has_block_with_tags(content, LEGACY_BLOCK_START, LEGACY_BLOCK_END)
+}
+
+fn has_block_with_tags(content: &str, start_tag: &str, end_tag: &str) -> bool {
     let mut search_from = 0usize;
-    while let Some(start_rel) = content[search_from..].find(prompts.important_block_start) {
-        let start = search_from + start_rel + prompts.important_block_start.len();
-        if let Some(end_rel) = content[start..].find(prompts.important_block_end) {
+    while let Some(start_rel) = content[search_from..].find(start_tag) {
+        let start = search_from + start_rel + start_tag.len();
+        if let Some(end_rel) = content[start..].find(end_tag) {
             let end = start + end_rel;
             let block = &content[start..end];
             if block_mentions_lazytask(block) {
                 return true;
             }
-            search_from = end + prompts.important_block_end.len();
+            search_from = end + end_tag.len();
         } else {
             break;
         }
@@ -93,21 +104,49 @@ fn replace_lazytask_important_block(
     prompts: crate::config::PromptConfig,
     prompt_markdown: &str,
 ) -> Option<String> {
+    replace_block_with_tags(
+        content,
+        prompts.important_block_start,
+        prompts.important_block_end,
+        prompts.important_block_start,
+        prompts.important_block_end,
+        prompt_markdown,
+    )
+    .or_else(|| {
+        replace_block_with_tags(
+            content,
+            LEGACY_BLOCK_START,
+            LEGACY_BLOCK_END,
+            prompts.important_block_start,
+            prompts.important_block_end,
+            prompt_markdown,
+        )
+    })
+}
+
+fn replace_block_with_tags(
+    content: &str,
+    find_start: &str,
+    find_end: &str,
+    emit_start: &str,
+    emit_end: &str,
+    prompt_markdown: &str,
+) -> Option<String> {
     let mut search_from = 0usize;
-    while let Some(start_rel) = content[search_from..].find(prompts.important_block_start) {
+    while let Some(start_rel) = content[search_from..].find(find_start) {
         let marker_start = search_from + start_rel;
-        let body_start = marker_start + prompts.important_block_start.len();
-        if let Some(end_rel) = content[body_start..].find(prompts.important_block_end) {
+        let body_start = marker_start + find_start.len();
+        if let Some(end_rel) = content[body_start..].find(find_end) {
             let body_end = body_start + end_rel;
-            let marker_end = body_end + prompts.important_block_end.len();
+            let marker_end = body_end + find_end.len();
             let block = &content[body_start..body_end];
             if block_mentions_lazytask(block) {
                 let updated = format!(
                     "{}{}\n{}\n{}{}",
                     &content[..marker_start],
-                    prompts.important_block_start,
+                    emit_start,
                     prompt_markdown.trim_matches('\n'),
-                    prompts.important_block_end,
+                    emit_end,
                     &content[marker_end..]
                 );
                 if updated != content {

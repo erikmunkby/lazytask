@@ -76,7 +76,7 @@ Bad: `lt create ...`
 Good: `cargo run -- create ...`
 Do not edit code within tags below.
 
-<EXTREMELY_IMPORTANT>
+<system_reminder>
 ALWAYS use lazytask (`lt`) for task and bug tracking in this project.
 Check existing tasks before starting work (`lt list`). Track all non-trivial work as tasks.
 Do NOT create tasks for very quick few-line fixes
@@ -96,4 +96,4 @@ Commands (all return JSON):
 
 After `lt done`, follow the `next_step` field in the response to capture learnings.
 When `lt learn --review` prompts a review, follow its instructions to convert learnings into project improvements.
-</EXTREMELY_IMPORTANT>
+</system_reminder>

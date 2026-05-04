@@ -22,8 +22,8 @@ pub const DEFAULT_PROMPT_CONFIG: PromptConfig = PromptConfig {
     learn_instructions_path: "src/config/prompts/learn_instructions.md",
     learn_threshold_hint_key: "learn_threshold_hint",
     learn_threshold_hint_path: "src/config/prompts/learn_threshold_hint.md",
-    important_block_start: "<EXTREMELY_IMPORTANT>",
-    important_block_end: "</EXTREMELY_IMPORTANT>",
+    important_block_start: "<system_reminder>",
+    important_block_end: "</system_reminder>",
 };
 
 /// Returns the effective done-reflection prompt: user override if present, else compiled-in default.
