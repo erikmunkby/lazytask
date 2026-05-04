@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-START_TAG="<EXTREMELY_IMPORTANT>"
-END_TAG="</EXTREMELY_IMPORTANT>"
+START_TAG="<system_reminder>"
+END_TAG="</system_reminder>"
 COPY_IF_MISMATCH=0
 AGENTS_PATH="AGENTS.md"
 PROMPT_PATH="src/config/prompts/agent_init.md"
@@ -94,7 +94,7 @@ $0 ~ "^[[:space:]]*" e "[[:space:]]*$" {
 in_block { print }
 END {
   if (seen_start == 0 || seen_end == 0) {
-    print "missing EXTREMELY_IMPORTANT block boundaries" > "/dev/stderr"
+    print "missing system_reminder block boundaries" > "/dev/stderr"
     exit 2
   }
 }
