@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.6.0...lazytask-v0.6.1) (2026-05-04)
+
+
+### Bug Fixes
+
+* **cli:** pin release-please-action to v4.4.0 to debug PAT failure ([c33f6db](https://github.com/erikmunkby/lazytask/commit/c33f6db086896412a3d9c210c4aec16e5cd8ab42))
+* **cli:** revert wretry wrapper that swallowed release-please outputs ([5bc4e42](https://github.com/erikmunkby/lazytask/commit/5bc4e4243520ad875cea694ef73c1d36355fa675))
+* **cli:** swap EXTREMELY_IMPORTANT xml tag to system_reminder ([17dcad3](https://github.com/erikmunkby/lazytask/commit/17dcad3f6ff25e9e8a22edeccbd5bf6d412b6639))
+
 ## [0.6.0](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.5.0...lazytask-v0.6.0) (2026-04-28)
 
 
