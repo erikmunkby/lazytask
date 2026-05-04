@@ -91,6 +91,22 @@ cargo install lazytask
 
 Grab the latest binary from [GitHub Releases](https://github.com/erikmunkby/lazytask/releases/latest).
 
+### Upgrade
+
+**Homebrew:**
+
+```bash
+brew update && brew upgrade lazytask
+```
+
+`brew update` refreshes the tap so Homebrew sees the latest release. Without it, `brew upgrade` may report you're already up to date.
+
+**Cargo:**
+
+```bash
+cargo install lazytask
+```
+
 ### Quick start
 
 ```bash
