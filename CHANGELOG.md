@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.6.1...lazytask-v0.6.2) (2026-05-05)
+
+
+### Bug Fixes
+
+* **cli:** resolve workspace root for bare repo worktrees ([c270224](https://github.com/erikmunkby/lazytask/commit/c2702246e41b2051d26d2d4f0626015de90ba1ee))
+
 ## [0.6.1](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.6.0...lazytask-v0.6.1) (2026-05-04)
 
 
