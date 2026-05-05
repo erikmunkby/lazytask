@@ -338,7 +338,7 @@ fn resolve_worktree_relative_gitdir() {
 }
 
 #[test]
-fn resolve_worktree_bare_repo_returns_none() {
+fn resolve_worktree_bare_repo_returns_bare_root() {
     let temp = TempDir::new().unwrap();
     let bare = temp.path().join("repo.git");
     fs::create_dir_all(bare.join("worktrees/feat")).unwrap();
@@ -351,5 +351,6 @@ fn resolve_worktree_bare_repo_returns_none() {
     )
     .unwrap();
 
-    assert!(loading::resolve_worktree_main_root(&wt.join(".git")).is_none());
+    let root = loading::resolve_worktree_main_root(&wt.join(".git")).unwrap();
+    assert_eq!(root, bare.canonicalize().unwrap());
 }
