@@ -356,12 +356,13 @@ pub(crate) fn resolve_worktree_main_root(git_file: &Path) -> Option<PathBuf> {
     let mut ancestor = gitdir_path.as_path();
     loop {
         if ancestor.file_name()?.to_str()? == "worktrees" {
-            let dot_git = ancestor.parent()?;
-            // Only accept standard `.git` dirs, not bare repos (e.g. `repo.git`).
-            if dot_git.file_name()?.to_str()? != ".git" {
-                return None;
+            let git_root = ancestor.parent()?;
+            if git_root.file_name()?.to_str()? == ".git" {
+                // Standard repo: workspace root is the project directory containing `.git`.
+                return git_root.parent().map(|p| p.to_path_buf());
             }
-            return dot_git.parent().map(|p| p.to_path_buf());
+            // Bare repo (e.g. `repo.git`): the bare repo dir is the workspace root.
+            return Some(git_root.to_path_buf());
         }
         ancestor = ancestor.parent()?;
     }
