@@ -81,6 +81,15 @@ Each task is a single `.md` file. Moving a task from `todo` to `in-progress` is 
 brew install erikmunkby/tap/lazytask
 ```
 
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/erikmunkby/lazytask/main/install.ps1 | iex
+```
+
+Installs `lt.exe` to `%LOCALAPPDATA%\lazytask\bin` and adds it to your user `PATH`.
+Pin a version with `$env:LAZYTASK_VERSION = 'lazytask-v0.6.1'` before running.
+
 **Cargo (all platforms):**
 
 ```bash
@@ -100,6 +109,14 @@ brew update && brew upgrade lazytask
 ```
 
 `brew update` refreshes the tap so Homebrew sees the latest release. Without it, `brew upgrade` may report you're already up to date.
+
+**Windows (PowerShell):**
+
+Re-run the install one-liner to upgrade in place:
+
+```powershell
+irm https://raw.githubusercontent.com/erikmunkby/lazytask/main/install.ps1 | iex
+```
 
 **Cargo:**
 
