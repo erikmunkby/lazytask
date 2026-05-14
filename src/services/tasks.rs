@@ -221,7 +221,19 @@ impl TaskService {
         validate_title(&title).map_err(validation_error)?;
         validate_details(&normalized_details, false).map_err(validation_error)?;
 
-        let mut task = self.resolve_task(query)?;
+        let task = self.resolve_task(query)?;
+        let new_file_name = normalize_file_name(&title).map_err(validation_error)?;
+        if new_file_name != task.file_name {
+            let blocking = [TaskStatus::Todo, TaskStatus::InProgress, TaskStatus::Done];
+            if self
+                .storage
+                .find_task_by_exact_file_name_in_statuses(&new_file_name, &blocking)?
+                .is_some()
+            {
+                return Err(ServiceError::TaskAlreadyExists(title));
+            }
+        }
+        let mut task = task;
         task.title = title.trim().to_string();
         task.task_type = task_type;
         task.discard_note = None;
