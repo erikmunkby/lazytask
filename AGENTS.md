@@ -89,6 +89,7 @@ Commands (all return JSON):
   lt list [--type task|bug] [--show-done]
   lt get '<title>' ['<title2>' ...]
   lt create --title '<title>' --type task|bug --details '<desc>' [--start]
+  lt edit '<title>' [--title '<new>'] [--type task|bug] [--details '<new>']
   lt start '<title>'
   lt done '<title>'
   lt discard '<title>' --discard-note '<short why>'  # won't do

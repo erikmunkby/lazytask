@@ -92,6 +92,22 @@ pub(super) fn run_ai_command(
             let task = service.discard_task_with_note(&query, &discard_note)?;
             Ok(serde_json::to_value(to_task_data(&task, now)).unwrap())
         }
+        Commands::Edit {
+            query,
+            title,
+            task_type,
+            details,
+        } => {
+            let now = chrono::Utc::now();
+            let existing = &service.get_tasks(std::slice::from_ref(&query))?[0];
+            let task = service.edit_task(
+                &query,
+                title.unwrap_or_else(|| existing.title.clone()),
+                task_type.unwrap_or(existing.task_type),
+                details.unwrap_or_else(|| existing.details.clone()),
+            )?;
+            Ok(serde_json::to_value(to_task_data(&task, now)).unwrap())
+        }
         Commands::Delete { query } => {
             let now = chrono::Utc::now();
             let task = service.delete_task(&query)?;

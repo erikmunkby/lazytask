@@ -51,6 +51,7 @@ pub(super) fn wants_ai_json_error() -> bool {
         Some("list")
             | Some("get")
             | Some("create")
+            | Some("edit")
             | Some("start")
             | Some("done")
             | Some("discard")

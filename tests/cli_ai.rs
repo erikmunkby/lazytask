@@ -1102,3 +1102,70 @@ fn create_task_with_env(temp: &TempDir, lazytask_dir: &str, title: &str) {
         .unwrap();
     assert!(output.status.success());
 }
+
+#[test]
+fn ai_edit_updates_title_only() {
+    let temp = init_temp();
+    create_task(&temp, "Old title");
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .args(["edit", "Old title", "--title", "New title"])
+        .output()
+        .unwrap();
+
+    let payload = parse_json(&output.stdout);
+    assert!(output.status.success());
+    assert_eq!(payload["title"], "New title");
+    assert_eq!(payload["details"], "test desc");
+}
+
+#[test]
+fn ai_edit_updates_details_only() {
+    let temp = init_temp();
+    create_task(&temp, "Keep title");
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .args(["edit", "Keep title", "--details", "new details"])
+        .output()
+        .unwrap();
+
+    let payload = parse_json(&output.stdout);
+    assert!(output.status.success());
+    assert_eq!(payload["title"], "Keep title");
+    assert_eq!(payload["details"], "new details");
+}
+
+#[test]
+fn ai_edit_rejects_duplicate_title() {
+    let temp = init_temp();
+    create_task(&temp, "Task A");
+    create_task(&temp, "Task B");
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .args(["edit", "Task B", "--title", "Task A"])
+        .output()
+        .unwrap();
+
+    let payload = parse_json(&output.stdout);
+    assert!(!output.status.success());
+    assert_eq!(payload["error"]["code"], "task_already_exists");
+}
+
+#[test]
+fn ai_edit_invalid_type_returns_json_error() {
+    let temp = init_temp();
+    create_task(&temp, "Ship rust");
+
+    let output = lt_command()
+        .current_dir(temp.path())
+        .args(["edit", "Ship rust", "--type", "invalid"])
+        .output()
+        .unwrap();
+
+    let payload = parse_json(&output.stdout);
+    assert!(!output.status.success());
+    assert_eq!(payload["error"]["code"], "invalid_arguments");
+}

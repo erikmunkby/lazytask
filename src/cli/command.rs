@@ -45,13 +45,9 @@ pub(super) enum Commands {
         start: bool,
     },
     /// Move a task to in-progress.
-    Start {
-        query: String,
-    },
+    Start { query: String },
     /// Mark a task as done.
-    Done {
-        query: String,
-    },
+    Done { query: String },
     /// Discard a task that won't be done.
     Discard {
         query: String,
@@ -59,10 +55,21 @@ pub(super) enum Commands {
         #[arg(long, allow_hyphen_values = true)]
         discard_note: String,
     },
-    /// Permanently delete a task.
-    Delete {
+    /// Edit a task's title, type, or details.
+    Edit {
         query: String,
+        /// New title. Keeps current if omitted.
+        #[arg(long)]
+        title: Option<String>,
+        /// New type. Keeps current if omitted.
+        #[arg(long = "type", value_enum)]
+        task_type: Option<TaskType>,
+        /// New details. Keeps current if omitted.
+        #[arg(long, allow_hyphen_values = true)]
+        details: Option<String>,
     },
+    /// Permanently delete a task.
+    Delete { query: String },
     /// Record or review learnings from completed tasks.
     Learn {
         /// A learning to record.
