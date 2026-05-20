@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.6.2...lazytask-v0.7.0) (2026-05-20)
+
+
+### Features
+
+* **cli:** add edit command for modifying task title, type, and details ([ec7b2d3](https://github.com/erikmunkby/lazytask/commit/ec7b2d3044bfcc208f81bc06516657191ec3b54c))
+
 ## [0.6.2](https://github.com/erikmunkby/lazytask/compare/lazytask-v0.6.1...lazytask-v0.6.2) (2026-05-05)
 
 
